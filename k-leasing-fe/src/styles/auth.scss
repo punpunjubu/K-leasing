@@ -1,0 +1,10 @@
+.login {
+    min-width: 26em;
+    .card-header{
+        background-color: $main;
+        color: $white;
+    }
+    button {
+        width: 100%;
+    }
+}

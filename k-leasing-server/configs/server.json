@@ -1,0 +1,20 @@
+{
+  "db": {
+    "host": "maria-db",
+    "user": "root",
+    "password": "root",
+    "database": "k_leasing_db",
+    "port":"3306"
+  },
+  "server": {
+    "port": 3001
+  },
+  "security": {
+    "key_session": "9ymZz=sCe_=qG'mu",
+    "max_age": 60000,
+    "name":"k-leasing-sid"
+  },
+  "server-fe": {
+    "httpEndPoint": "http://localhost:3000"
+  }
+}

@@ -1,0 +1,8 @@
+.table-preview {
+    overflow-x: scroll;
+    table{
+        th,td{
+            min-width: 200px;
+        }
+    }
+}
