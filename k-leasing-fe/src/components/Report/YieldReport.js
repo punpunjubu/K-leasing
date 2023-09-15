@@ -283,6 +283,7 @@ export const YieldReport = (props) => {
 
                         let endDate = DateFormat(date).endOf('month')
                         const defaultMonth = DateFormat(date).month()
+               
                         if (midno !== '' && dealer.dealer_condition_dealer_code !== '') {
                             let groupPaydate = []
                             if (paymentPay) {
@@ -474,7 +475,6 @@ export const YieldReport = (props) => {
                                         }
                            
                                         const rateRes         = CountRate(day, masterCondition, element.rate)
-                                              console.log("🚀 ~ file: YieldReport.js:476 ~ out_standing.map ~ rateRes:", rateRes)
                                               lastRate        = rateRes.value
                                               param.startDate = _startDate.format("DD-MM-YYYY")
                                               param.endDate   = _endDate.format("DD-MM-YYYY")
@@ -483,6 +483,7 @@ export const YieldReport = (props) => {
                                               param.payAmount = groupPaydate[i].amount
                                           
                                               console.log('L', dayLoop,'รอบ MRL',index,'รอบ',i)
+
                                         if (dayLoop > 0 && day != lastDay) {
                                         
                                             if (rateRes.type === 'nomal') {
@@ -968,8 +969,9 @@ export const YieldReport = (props) => {
                                                         if (defaultPay.length) {
                                                             param.startDate = DateFormat(_cloneDeep(groupPaydate[i - 1].paydate)).add(1, 'day').format("DD-MM-YYYY")
                                                         }
-                                                        param.endDate = DateFormat(groupPaydate[i - 1].paydate).add((dayLoop - dateLoopCount) - (defaultPay.length ? 0 : 1), 'days').format("DD-MM-YYYY")
                                                         if(nRate.length > 1){
+                                                            param.endDate = DateFormat(groupPaydate[i - 1].paydate).add((dayLoop - dateLoopCount) - (defaultPay.length ? 0 : 1), 'days').format("DD-MM-YYYY")
+                                                            
                                                             if(lastDay + dayLoop >= day){
                                                                 const x = (dayLoop + lastDay) - day
                                                                 dayLoop = dayLoop - x
@@ -981,7 +983,7 @@ export const YieldReport = (props) => {
                                                         param.endDate = param.startDate
                                                     }
                                                     
-                                                    
+                                                    console.log('param.endDate', param.endDate)
                                                     param.normalRate = rateRes.value
                                                     param.rentalDay = dayLoop
                                                     // param.rentalDay = dateLoopCount > 0 ? dayLoop - dateLoopCount : dayLoop
