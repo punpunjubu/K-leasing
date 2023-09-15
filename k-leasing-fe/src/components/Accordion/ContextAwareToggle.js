@@ -9,6 +9,7 @@ export const ContextAwareToggle = (props) => {
             dealer_condition,
             default_file,
             master_condition,
+            master_condition_spec,
             out_standing,
             payment
         } = {}
@@ -18,6 +19,9 @@ export const ContextAwareToggle = (props) => {
     switch (eventKey) {
         case 'master_data':
             showUpdateFile = !_isUndefined(master_condition) && !_isUndefined(master_condition[0]) && master_condition[0].create_at
+            break;
+        case 'master_data_spec':
+            showUpdateFile = !_isUndefined(master_condition_spec) && !_isUndefined(master_condition_spec[0]) && master_condition_spec[0].create_at
             break;
         case 'out_standing':
             showUpdateFile = !_isUndefined(out_standing) && !_isUndefined(out_standing[0]) && out_standing[0].out_standing_create_at

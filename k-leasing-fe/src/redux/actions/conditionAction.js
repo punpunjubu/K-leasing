@@ -15,6 +15,19 @@ export const getMaster = () => {
   };
 };
 
+export const getMasterSpec = () => {
+
+  return {
+    types: {
+      success: types.MASTER_SPEC_DATA_SUCCESS,
+      pending: types.MASTER_SPEC_DATA_PENDING,
+      error: types.MASTER_SPEC_DATA_ERROR,
+    },
+    call: call.get('getMasterSpec', {}),
+
+  };
+};
+
 export const getLoanType = () => {
 
   return {

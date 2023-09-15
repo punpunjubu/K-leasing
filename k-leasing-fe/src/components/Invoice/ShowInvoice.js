@@ -19,6 +19,7 @@ import _sumBy from 'lodash/sumBy'
 import _filter from 'lodash/filter'
 import _cloneDeep from 'lodash/cloneDeep'
 import _isNull from 'lodash/isNull'
+import _split from 'lodash/split'
 
 export const ShowInvoice = (props) => {
     const ref = createRef();
@@ -225,12 +226,17 @@ export const ShowInvoice = (props) => {
                                 <tbody>
                                     {
                                         listInvoice.map((res, index) => {
+                                            const spRate = _split(parseFloat(parseFloat(res.rate).toFixed(6)), '.')
+                                            let toFixed = 2
+                                            if (spRate.length === 2) {
+                                                toFixed = res.formatToFixed
+                                            }
                                             return (
                                                 <tr key={index}>
                                                     <td>{index + 1}</td>
                                                     <td>{res.midno}</td>
                                                     <td>{formatAmount(res.outstanding)}</td>
-                                                    <td>{formatAmount(res.rate)}</td>
+                                                    <td>{formatAmount(res.rate,toFixed)}</td>
                                                     <td>{res.day}</td>
                                                     <td>{formatAmount(res.preVat)}</td>
                                                     <td>{formatAmount(res.vat)}</td>

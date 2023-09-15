@@ -8,6 +8,11 @@ const initalState = {
         pending: false,
         error: {},
     },
+    masterSpecInterest: {
+        data: undefined,
+        pending: false,
+        error: {},
+    },
     dealerCondition: {
         data: undefined,
         pending: false,
@@ -57,6 +62,30 @@ const condition = (state = initalState, action = {}) => {
         case types.MASTER_DATA_ERROR:
             return update(state, {
                 masterInterest: {
+                    error: { $set: action.error },
+                    pending: { $set: false },
+                },
+            });
+
+        case types.MASTER_SPEC_DATA_SUCCESS:
+            const { result: { data: dataMasterSpec } } = action
+            return update(state, {
+                masterSpecInterest: {
+                    data: { $set: dataMasterSpec },
+                    pending: { $set: false },
+                    error: { $set: {} },
+                },
+            });
+        case types.MASTER_SPEC_DATA_PENDING:
+            return update(state, {
+                masterSpecInterest: {
+                    pending: { $set: true },
+                    error: { $set: {} },
+                },
+            });
+        case types.MASTER_SPEC_DATA_ERROR:
+            return update(state, {
+                masterSpecInterest: {
                     error: { $set: action.error },
                     pending: { $set: false },
                 },

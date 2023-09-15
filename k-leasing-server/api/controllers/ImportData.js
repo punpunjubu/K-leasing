@@ -19,7 +19,13 @@ class ImportData {
                     data: 'success',
                     status: 200
                 });
-            } else if (type === 'out_standing') {
+            }else if (type === 'master_data_spec') {
+                await db.setDataMasterSpecData(dataImport, user_id)
+                res.status(200).json({
+                    data: 'success',
+                    status: 200
+                });
+            }  else if (type === 'out_standing') {
                 await db.setDataOutStanding(dataImport, user_id)
                 res.status(200).json({
                     data: 'success',

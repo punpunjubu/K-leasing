@@ -2,7 +2,7 @@ import React, { useState, useEffect, forwardRef } from 'react'
 import { connect } from 'react-redux'
 import moment from 'moment'
 import DatePicker from 'react-datepicker'
-import { DateFormatFront } from '../../utils/helpers'
+import { DateFormat } from '../../utils/helpers'
 import { Condition, InputData, Ui } from '../../redux/actions'
 
 import Row from 'react-bootstrap/Row'
@@ -72,7 +72,7 @@ export const SearchInvoice = (props) => {
     // const defaultDueDate = moment().startOf('month').add(9, 'days')
     const CustomInput = forwardRef(({ value, onClick }, ref) => (
         <button type="button" className="btn btn-warning" onClick={onClick} ref={ref}>
-            {value ? `Date : ${DateFormatFront(value).format('DD-MM-YYYY')}` : dueDate.format('DD-MM-YYYY')}
+            {value ? `Date : ${DateFormat(value).format('DD-MM-YYYY')}` : dueDate.format('DD-MM-YYYY')}
         </button>
     ));
     // console.log(`dueDate`, dueDate)

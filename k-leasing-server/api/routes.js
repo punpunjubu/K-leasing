@@ -15,6 +15,7 @@ class RouterController {
         app.get('/getUser', user.getUser);
         app.get('/logout', user.logout);
         app.get('/getMaster', condition.getMaster);
+        app.get('/getMasterSpec', condition.getMasterSpec);
         app.get('/getDealerCondition', condition.getDealerCondition);
         app.get('/getSearchReportByDealer', condition.getSearchReportByDealer);
         app.get('/getStatusFile', condition.getStatusFile);

@@ -65,14 +65,41 @@ export const ImportFile = (props) => {
                             let element = resp.rows[index];
                             if (element.length) {
                                 if (index != 0) {
+                                    
                                     let key = []
                                     if (activeInputFile.type === 'out_standing') {
                                         key = [4, 5]
+                                        if(element.length < 27){
+                                            let setElement = []
+                                            for (let i = 0; i < (27 - element.length); i++) {
+                                                setElement.push('')
+                                            }
+                                            element = [...element,...setElement]
+                                        }
                                     } else if (activeInputFile.type === 'payment') {
                                         key = [2, 4, 6, 8, 10, 12]
                                     } else if (activeInputFile.type === 'default') {
                                         key = [5, 6]
+                                    } else if(activeInputFile.type === 'master_data' || activeInputFile.type === 'master_data_spec' ){
+                                        if(element.length < 37){
+                                            let setElement = []
+                                            for (let i = 0; i < (37 - element.length); i++) {
+                                                setElement.push(0)
+                                            }
+                                            element = [...element,...setElement]
+                                        }
+
+                                    }else if(activeInputFile.type === 'dealer_condition'){
+                                        if(element.length < 26){
+                                            let setElement = []
+                                            for (let i = 0; i < (26 - element.length); i++) {
+                                                setElement.push('')
+                                            }
+                                            element = [...element,...setElement]
+                                        }
+
                                     }
+                     
                                     for (let index = 0; index < key.length; index++) {
                                         const keyIndex = key[index];
                                         if (element[keyIndex]) {
@@ -92,6 +119,7 @@ export const ImportFile = (props) => {
                                             }
                                         }
                                     }
+                                 
                                     rows.push(element)
                                 }
                             } else {

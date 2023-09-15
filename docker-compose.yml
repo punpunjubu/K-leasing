@@ -29,7 +29,7 @@ services:
     image: mariadb
     restart: always
     environment:
-      MARIADB_DATABASE: k_leasing_db
+      MARIADB_DATABASE: k_leasing_db_2
       MARIADB_USER: root
       MARIADB_ROOT_PASSWORD: root
       # MARIADB_ALLOW_EMPTY_PASSWORD: ok

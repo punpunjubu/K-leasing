@@ -8,17 +8,21 @@ export function isClientSide() {
 }
 
 export function numberWithSeparators(value, sep = DEFAULT_AMOUNT_SEPARATOR) {
-    return value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, sep);
+    let parts = value.toString().split('.')
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, sep)
+    if(Number(parts[1]) > 6){
+        // parts[1] = Number(parts[1]).toFixed(6)
+    }
+    return parts.join(".")
 }
 
 export function formatAmount(amount, toFixed = 2) {
     if (amount === '' || Number.isNaN(amount)) {
         return '';
     }
-
     return numberWithSeparators(parseFloat(amount).toFixed(toFixed));
 }
-export function formatNumber(amount, toFixed = 2) {
+export function formatNumber(amount, toFixed = 6) {
     if (amount === '' || Number.isNaN(amount)) {
         return '';
     }
@@ -42,8 +46,7 @@ export function excelDateToJSDate(serial) {
     var minutes = Math.floor(total_seconds / 60) % 60;
     return moment(new Date(date_info.getFullYear(), date_info.getMonth(), date_info.getDate(), hours, minutes, seconds)).format('YYYY/MM/DD');
 }
-export const DateFormatFront = (data) => moment(new Date(data), 'YYYY/MM/DD')
-export const DateFormat = (data) => moment(data, 'YYYY/MM/DD')
+export const DateFormat = (data) => moment(new Date(data), 'YYYY/MM/DD')
 export const DateShowFormat = (data) => moment(new Date(data), 'YYYY/MM/DD').format("DD-MM-YYYY")
 export const DateFormatTH = (data, type = '') => {
     const thday = ["อาทิตย์", "จันทร์",
@@ -63,16 +66,34 @@ export const DateFormatTH = (data, type = '') => {
 }
 export const CountRate = (day, masterCondition, rate) => {
     let rateMaster = {}
-    const minDay = [30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330, 360, 9999]
+    const minDay = [30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330, 360, 390, 420, 450, 480, 510, 540, 570, 600, 630, 660, 690, 720, 750, 780, 810, 840, 870, 900, 930, 960, 990, 1020, 9999]
+    let date_rate = 0
     for (let index = 0; index < minDay.length; index++) {
         let dateRate = 0
         if (!_.isUndefined(masterCondition) && !_.isUndefined(masterCondition[`date_rate_${index + 1}`])) {
             dateRate = Number(`${masterCondition[`date_rate_${index + 1}`]}`) || 0
+            if(dateRate > 0){
+                date_rate = dateRate
+            }
+            if(dateRate === 0 && date_rate > 0){
+                dateRate = date_rate
+            }
         }
+     
         if (dateRate) {
             let d = 0
             if (!_.isUndefined(masterCondition) && !_.isUndefined(masterCondition[`date_rate_${index}`])) {
                 d = Number(`${masterCondition[`date_rate_${index}`]}`) || 0
+                // console.log("🚀 ~ file: index.js:88 ~ CountRate ~ d:", d,date_rate)
+                if(masterCondition[`date_rate_${index}`] != 'Normal Rate'){
+
+                    if(d > 0){
+                        date_rate = d
+                    }
+                    if(d === 0 && date_rate > 0){
+                        d = date_rate
+                    }
+                }
             }
             if (day <= minDay[index]) {
                 rateMaster = {

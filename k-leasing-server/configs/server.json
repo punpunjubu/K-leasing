@@ -3,7 +3,7 @@
     "host": "maria-db",
     "user": "root",
     "password": "root",
-    "database": "k_leasing_db",
+    "database": "k_leasing_2_db",
     "port":"3306"
   },
   "server": {

@@ -16,6 +16,7 @@ import _sumBy from 'lodash/sumBy'
 import _filter from 'lodash/filter'
 import _cloneDeep from 'lodash/cloneDeep'
 import _isNull from 'lodash/isNull'
+import _split from 'lodash/split'
 import moment from 'moment';
 
 Font.register({
@@ -48,7 +49,8 @@ const styles = StyleSheet.create({
 
     },
     textRight: {
-        paddingLeft: 40
+        paddingLeft: 40,
+        textAlign: 'right'
     },
     textLeft: {
         width: '50%'
@@ -172,8 +174,13 @@ const MyDoc = (props) => {
                     <Text style={styles.textLeft}>{'ที่ส่งเอกสาร:'}</Text>
                 </View> */}
                 <View style={[styles.content, { paddingTop: 15 }]}>
-                    <Text style={styles.textLeft2}>{`Floorplan Display Rental Charges ${DateFormatTH(date, 1)} (Baht):`}</Text>
-                    <Text style={[styles.textRight2, { fontWeight: 'bold' }]}>{formatAmount(preVat)}</Text>
+                    <View style={{ flexDirection: 'row' }}>
+                        <Text style={[styles.textLeft2, { width: '59%', }]}>{`Floorplan Display Rental Charges ${DateFormatTH(date, 1)} (Baht):`}</Text>
+                    </View>
+                    <View style={{ alignItems: 'flex-end' }}>
+                        <Text style={[styles.textRight2, { fontWeight: 'bold' }]}>{formatAmount(preVat)}</Text>
+                        <Text style={[styles.textRight2, { minWidth: 100 }]}></Text>
+                    </View>
                 </View>
                 <View style={[styles.content]}>
                     <Text style={[styles.textLeft2,]}>{`${textShow}ประจำเดือน${DateFormatTH(date, 2)} (บาท)`}</Text>
@@ -186,45 +193,76 @@ const MyDoc = (props) => {
                     <Text style={[styles.textLeft2,]}>{`${textShow}เพิ่มเติม:`}</Text>
                 </View>
                 <View style={[styles.content, { paddingTop: 10 }]}>
-                    <Text style={styles.textLeft2}>{'Sub Total:'}</Text>
-                    <Text style={[styles.textRight2]}>{formatAmount(totalAdj)}</Text>
+                    <View style={{ flexDirection: 'row' }}>
+                        <Text style={[styles.textLeft2,{width: '59%',}]}>{'Sub Total:'}</Text>
+                    </View>
+                    <View style={{ alignItems: 'flex-end' }}>
+                        <Text>{formatAmount(totalAdj)}</Text>
+                        <Text style={[styles.textRight2, { minWidth: 100 }]}></Text>
+                    </View>
                 </View>
                 <View style={[styles.content]}>
                     <Text style={[styles.textLeft2,]}>{`รวม${textShow}:`}</Text>
                 </View>
                 <View style={[styles.content, { paddingTop: 10 }]}>
-                    <Text style={styles.textLeft2}>{`VAT ${v} :`}</Text>
-                    <Text style={[styles.textRight2]}>{formatAmount(vat)}</Text>
+                    <View style={{ flexDirection: 'row' }}>
+                        <Text style={[styles.textLeft2,{width: '59%',}]}>{`VAT ${v} :`}</Text>
+                    </View>
+
+                    <View style={{ alignItems: 'flex-end' }}>
+                        <Text>{formatAmount(vat)}</Text>
+                        <Text style={[styles.textRight2, { minWidth: 100 }]}></Text>
+                    </View>
                 </View>
                 <View style={[styles.content]}>
                     <Text style={[styles.textLeft2]}>{`ภาษีมูลค่าเพิ่ม ${v}`}</Text>
                 </View>
                 <View style={[styles.content, { paddingTop: 10 }]}>
-                    <Text>{'หัก'}</Text>
-                    <Text style={[styles.textLeft2, { paddingLeft: 25, width: '57%', }]}>{`WithHolding Tax ${wh}:`}</Text>
-                    <Text style={[styles.textRight2, { paddingLeft: 40, borderBottom: 1, borderBottomColor: '#000', minWidth: 100 }]}>{formatAmount(withHolding)}</Text>
+                    <View style={{flexDirection:'row'}}>
+                        <Text>{'หัก'}</Text>
+                        <Text style={[styles.textLeft2, { paddingLeft: 25, width: '57%', }]}>{`WithHolding Tax ${wh}:`}</Text>
+                    </View>
+                    <View style={{alignItems:'flex-end'}}>
+                        <Text>{formatAmount(withHolding)}</Text>
+                        <Text style={[styles.textRight2, { borderBottom: 1, borderBottomColor: '#000', minWidth: 100 }]}></Text>
+                    </View>
                 </View>
                 <View style={[styles.content]}>
                     <Text style={[styles.textLeft2,]}>{`ภาษีหัก ณ. ที่จ่าย ${wh}`}</Text>
                 </View>
                 <View style={[styles.content, { paddingTop: 10 }]}>
-                    <Text style={styles.textLeft2}>{'Total Rental Payables:'}</Text>
-                    <Text style={[styles.textRight2]}>{formatAmount(oldTotal)}</Text>
+                    <View style={{ flexDirection: 'row' }}>
+                        <Text style={[styles.textLeft2,{width: '59%',}]}>{'Total Rental Payables:'}</Text>
+                    </View>
+                    <View style={{alignItems:'flex-end'}}>
+                        <Text>{formatAmount(oldTotal)}</Text>
+                        <Text style={[styles.textRight2, { minWidth: 100 }]}></Text>
+                    </View>
                 </View>
                 <View style={[styles.content]}>
                     <Text style={[styles.textLeft2]}>{`รวม${textShow}ค้างชำระ`}</Text>
                 </View>
                 <View style={[styles.content, { paddingTop: 10 }]}>
-                    <Text style={styles.textLeft2}>{'Adjustment:'}</Text>
-                    <Text style={[styles.textRight2, { borderBottom: 1, borderBottomColor: '#000', minWidth: 100 }]}>{formatAmount(adjustment2)}</Text>
+                    <View style={{ flexDirection: 'row' }}>
+                        <Text style={[styles.textLeft2,{width: '59%',}]}>{'Adjustment:'}</Text>
+                    </View>
+                    <View style={{ alignItems:'flex-end'}}>
+                        <Text>{formatAmount(adjustment2)}</Text>
+                        <Text style={[styles.textRight2, { borderBottom: 1, borderBottomColor: '#000', minWidth: 100 }]}></Text>
+                    </View>
                 </View>
                 <View style={[styles.content]}>
                     <Text style={[styles.textLeft2,]}>{`ส่วนเพิ่มเติม`}</Text>
                 </View>
 
                 <View style={[styles.content, { paddingTop: 10 }]}>
-                    <Text style={styles.textLeft2}>{'Grand Total:'}</Text>
-                    <Text style={[styles.textRight2, { borderBottom: 1, borderBottomColor: '#000', minWidth: 100, fontWeight: 'bold' }]}>{formatAmount(total)}</Text>
+                    <View style={{ flexDirection: 'row' }}>
+                        <Text style={[styles.textLeft2, { width: '59%', }]}>{'Grand Total:'}</Text>
+                    </View>
+                    <View style={{ alignItems:'flex-end' }}>
+                        <Text style={[{ fontWeight: 'bold' }]}>{formatAmount(total)}</Text>
+                        <Text style={[styles.textRight2, { borderBottom: 1, borderBottomColor: '#000', minWidth: 100 }]}></Text>
+                    </View>
                 </View>
                 <View style={[styles.content]}>
                     <Text style={[styles.textLeft2]}>{`รวมทั้งสิ้น`}</Text>
@@ -269,8 +307,8 @@ const MyDoc = (props) => {
                             </View>
                             <View style={[styles.textCenter, { width: '40%' }]}><Text>{`Mid`}</Text></View>
                             <View style={[styles.textCenter, { width: '50%' }]}><Text>{`Amount`}</Text></View>
-                            <View style={[styles.textCenter, { width: 100 }]}><Text>{`Rate%`}</Text></View>
-                            <View style={[styles.textCenter, { width: 130 }]}><Text>{`Days`}</Text></View>
+                            <View style={[styles.textCenter, { width: 150 }]}><Text>{`Rate%`}</Text></View>
+                            <View style={[styles.textCenter, { width: 100 }]}><Text>{`Days`}</Text></View>
                             <View style={[{ width: '100%' }]}>
                                 <View style={{ alignItems: 'center', borderBottomWidth: 1, borderColor: "#000" }}>
                                     <Text>{`Rental this month`}</Text>
@@ -284,6 +322,11 @@ const MyDoc = (props) => {
                         </View>
                         {
                             listInvoice.map((res, index) => {
+                                const spRate = _split(parseFloat(parseFloat(res.rate).toFixed(6)), '.')
+                                let toFixed = 2
+                                if (spRate.length === 2) {
+                                    toFixed = res.formatToFixed
+                                }
                                 return (
                                     <View key={index} style={{ flexDirection: 'row', borderLeftWidth: 1, borderBottomWidth: 1, borderRightWidth: 1, borderColor: '#000' }}>
                                         <View style={[styles.textCenter, { width: 130 }]}>
@@ -295,10 +338,10 @@ const MyDoc = (props) => {
                                         <View style={[styles.textEnd, { width: '50%' }]}>
                                             <Text>{formatAmount(res.outstanding)}</Text>
                                         </View>
-                                        <View style={[styles.textCenter, { width: 100 }]}>
-                                            <Text>{formatAmount(res.rate)}</Text>
+                                        <View style={[styles.textCenter, { width: 150 }]}>
+                                            <Text>{formatAmount(res.rate,toFixed)}</Text>
                                         </View>
-                                        <View style={[styles.textCenter, { width: 130 }]}>
+                                        <View style={[styles.textCenter, { width: 100 }]}>
                                             <Text>{res.day}</Text>
                                         </View>
                                         <View style={[{ width: '100%' }]}>
@@ -328,10 +371,10 @@ const MyDoc = (props) => {
                             <View style={[styles.textEnd, { width: '50%' }]}>
                                 <Text style={{ fontWeight: 'bold' }}>{formatAmount(outstanding)}</Text>
                             </View>
-                            <View style={[styles.textCenter, { width: 100 }]}>
+                            <View style={[styles.textCenter, { width: 150 }]}>
                                 <Text></Text>
                             </View>
-                            <View style={[styles.textCenter, { width: 130 }]}>
+                            <View style={[styles.textCenter, { width: 100 }]}>
                                 <Text></Text>
                             </View>
                             <View style={[{ width: '100%' }]}>
@@ -400,8 +443,8 @@ const MyDocDetail = (props) => {
                             </View>
                             <View style={[styles.textCenter, { width: '40%' }]}><Text>{`Mid`}</Text></View>
                             <View style={[styles.textCenter, { width: '50%' }]}><Text>{`Amount`}</Text></View>
-                            <View style={[styles.textCenter, { width: 100 }]}><Text>{`Rate%`}</Text></View>
-                            <View style={[styles.textCenter, { width: 130 }]}><Text>{`Days`}</Text></View>
+                            <View style={[styles.textCenter, { width: 150 }]}><Text>{`Rate%`}</Text></View>
+                            <View style={[styles.textCenter, { width: 100 }]}><Text>{`Days`}</Text></View>
                             <View style={[{ width: '100%' }]}>
                                 <View style={{ alignItems: 'center', borderBottomWidth: 1, borderColor: "#000" }}>
                                     <Text>{`Rental this month`}</Text>
@@ -415,6 +458,11 @@ const MyDocDetail = (props) => {
                         </View>
                         {
                             listInvoice.map((res, index) => {
+                                const spRate = _split(parseFloat(parseFloat(res.rate).toFixed(6)), '.')
+                                let toFixed = 2
+                                if (spRate.length === 2) {
+                                    toFixed = res.formatToFixed
+                                }
                                 return (
                                     <View key={index} style={{ flexDirection: 'row', borderLeftWidth: 1, borderBottomWidth: 1, borderRightWidth: 1, borderColor: '#000' }}>
                                         <View style={[styles.textCenter, { width: 130 }]}>
@@ -426,10 +474,10 @@ const MyDocDetail = (props) => {
                                         <View style={[styles.textEnd, { width: '50%' }]}>
                                             <Text>{formatAmount(res.outstanding)}</Text>
                                         </View>
-                                        <View style={[styles.textCenter, { width: 100 }]}>
-                                            <Text>{formatAmount(res.rate)}</Text>
+                                        <View style={[styles.textCenter, { width: 150 }]}>
+                                            <Text>{formatAmount(res.rate, toFixed)}</Text>
                                         </View>
-                                        <View style={[styles.textCenter, { width: 130 }]}>
+                                        <View style={[styles.textCenter, { width: 100 }]}>
                                             <Text>{res.day}</Text>
                                         </View>
                                         <View style={[{ width: '100%' }]}>
@@ -461,10 +509,10 @@ const MyDocDetail = (props) => {
                             <View style={[styles.textEnd, { width: '50%' }]}>
                                 <Text style={{ fontWeight: 'bold' }}>{formatAmount(outstanding)}</Text>
                             </View>
-                            <View style={[styles.textCenter, { width: 100 }]}>
+                            <View style={[styles.textCenter, { width: 150 }]}>
                                 <Text></Text>
                             </View>
-                            <View style={[styles.textCenter, { width: 130 }]}>
+                            <View style={[styles.textCenter, { width: 100 }]}>
                                 <Text></Text>
                             </View>
                             <View style={[{ width: '100%' }]}>
