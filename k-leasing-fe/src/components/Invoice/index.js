@@ -372,6 +372,9 @@ export const Invoice = (props) => {
                                                     // }
                                                 } else {
                                                     dayLoop = CountDate(paydate, monthInvoicLoop, [])
+                                                    if(i > 0 && groupPaydate.length > 1 && Number(startDate.format('YYYYMMDD')) >= Number(monthInvoicLoop.format('YYYYMMDD'))){
+                                                        dayLoop = CountDate(paydate, startDate, [])
+                                                    }
                                                 }
                                             } else {
                                                 if (Number(endDate.format('D')) > Number(paydate.format('D'))) {
@@ -1176,14 +1179,14 @@ export const Invoice = (props) => {
                                             } else {
 
                                                 const totalDate = DateFormat(invoiceDate).add(countDate, 'days')
-                                                const oldDate = CountDate(totalDate, startDate, [])
+                                                const oldDate = CountDate(totalDate, startDate, defaultPay.length ? [true]:[])
                                                 let newTotalDate = CountDate(endDate, DateFormat(totalDate), [true])
                                                 if(totalDate.format('MM') !== startDate.format("MM")){
                                                     newTotalDate = CountDate(endDate, DateFormat(startDate), [true])
                                                 }
                                                 if (oldDate > 0) {
                                                     param.rate = rateRes.oldValue
-                                                    param.day = oldDate
+                                                    param.day = (oldDate - (defaultPay.length ? 1 : 0))
 
                                                     if (param.day > 0) {
 
@@ -1254,9 +1257,9 @@ export const Invoice = (props) => {
         if (Object.keys(dataRender).length) {
             Object.keys(dataRender).map((res, index) => {
                 const item = dataRender[res]
-                let preVat = _sumBy(item.listInvoice, e => formatNumber(e.preVat))
+                let preVat = _sumBy(item.listInvoice, e => formatNumber(e.preVat,2))
                 let vat = _sumBy(item.listInvoice, e => (e.vat))
-                let withHolding = _sumBy(item.listInvoice, e => formatNumber(e.withHolding))
+                let withHolding = _sumBy(item.listInvoice, e => formatNumber(e.withHolding,2))
                 let totalAdj = (preVat + Number(item.adjustment1))
                 if (item.adjustment1) {
                     if (item.dealer_condition_loan_type === "INVENTORY") {

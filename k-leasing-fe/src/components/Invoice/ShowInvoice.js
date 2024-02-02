@@ -43,8 +43,8 @@ export const ShowInvoice = (props) => {
         dueDateShow,
         dateShow } = props
     const [activeInvoice, setActiveInvoice] = useState(1)
-    const outstanding = _sumBy(listInvoice, (e) => Number(e.outstanding))
-    let preVat = _sumBy(listInvoice, e => formatNumber(e.preVat))
+    const outstanding = _sumBy(listInvoice, (e) => Number(e.outstanding,2))
+    let preVat = _sumBy(listInvoice, e => formatNumber(e.preVat,2))
     // let vat = _sumBy(listInvoice, e => (e.vat))
     let vat = 0
     if (dealer_condition_loan_type === "INVENTORY") {

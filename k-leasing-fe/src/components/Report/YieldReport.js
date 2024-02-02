@@ -358,6 +358,7 @@ export const YieldReport = (props) => {
                                   
                                         lastDate = _cloneDeep(paydate)
                                         let calculateByFranchise = true
+                                       
                                         if (interestCalDate) {
                                             const monthInterestCalLoop = DateFormat(interestCalDate)
 
@@ -397,11 +398,17 @@ export const YieldReport = (props) => {
                                         } else {
 
                                             if (monthInvoicLoop.year() === paydate.year() && monthInvoicLoop.month() === paydate.month()) {
+                                               
                                                 if (Number(endDate.format('D')) > Number(paydate.format('D'))) {
                                                     dayLoop = CountDate(paydate, startDate, [])
                                                 } else {
+                                                   
                                                     dayLoop = CountDate(paydate, monthInvoicLoop, [])
                                                     _startDate = monthInvoicLoop
+                                                    if(i > 0 && groupPaydate.length > 1 && Number(startDate.format('YYYYMMDD')) >= Number(monthInvoicLoop.format('YYYYMMDD'))){
+                                                        dayLoop = CountDate(paydate, startDate, [])
+                                                        _startDate = startDate
+                                                    }
 
                                                 }
 
@@ -484,8 +491,9 @@ export const YieldReport = (props) => {
                                           
                                               console.log('L', dayLoop,'รอบ MRL',index,'รอบ',i)
 
+
                                         if (dayLoop > 0 && day != lastDay) {
-                                        
+                                       
                                             if (rateRes.type === 'nomal') {
                                                 let startDateRentalDay = _cloneDeep(startDate)
                             
@@ -505,13 +513,14 @@ export const YieldReport = (props) => {
                                                         amount += Number(groupPaydate[iAmount].amount)
                                                     }
                                                     param.outstanding = outstanding - amount
+                                                   
                                                     if (interestCalDate) {
                                                         const monthInterestCalLoop = DateFormat(interestCalDate)
                                                         const oldDateNomal = DateFormat(groupPaydate[i - 1].paydate)
                                                         if(monthInterestCalLoop > oldDateNomal){
                                                             param.startDate = monthInterestCalLoop.format("DD-MM-YYYY")
                                                             startDateRentalDay = monthInterestCalLoop
-                                                            dayLoop = CountDate(paydate, monthInterestCalLoop, [true])
+                                                            dayLoop = CountDate(paydate, monthInterestCalLoop, defaultPay.length > 0 ? [true] : [])
                                                       
                                                         }else{
                                                             param.startDate = DateFormat(_cloneDeep(oldDateNomal)).add(defaultPay.length > 0 ? 1 : 0, 'days').format("DD-MM-YYYY")
@@ -520,9 +529,11 @@ export const YieldReport = (props) => {
                                                         }
                                                     }else{
                                                         const checkStartDate = DateFormat(_cloneDeep(groupPaydate[i - 1].paydate)).add(defaultPay.length > 0 ? 1 : 0, 'days')
+                                                       
                                                         if(checkStartDate.format("DD-MM-YYYY") > param.endDate){
                                                             dayLoop = 0
                                                         }else{
+                                                          
                                                             if(_cloneDeep(startDate).format('DD-MM-YYYY') < DateFormat(groupPaydate[i - 1].paydate).format('DD-MM-YYYY')){
                                                                 param.startDate = checkStartDate.format("DD-MM-YYYY")
                                                                 startDateRentalDay = checkStartDate
@@ -535,7 +546,7 @@ export const YieldReport = (props) => {
                                                 }
                                                 
                                                 param.endDate = _cloneDeep(_endDate).subtract(defaultPay.length ? 0 : 1, 'days').format("DD-MM-YYYY")
-                                                
+                                             
                                                 if (nRate.length > 1 && dayLoop > 0) {
                                                     if(setLastDateEnd.format('YYYY/MM/DD') >= element.endDate.format('YYYY/MM/DD')){
                                                         setLastDateEnd = element.endDate
@@ -543,6 +554,7 @@ export const YieldReport = (props) => {
                                                     }
                                                     if ((index + 1) === nRate.length) {
                                                         dayCount = CountDate(_cloneDeep(endDateRentalDay).subtract(defaultPay.length ? 0 : 1, 'days'), monthInvoicLoop, [true])
+                                                       
                                                         if(dayLoop + lastDay > day){
                                                             const x = (dayLoop + lastDay) - day
                                                             // param.startDate = _cloneDeep(_endDate).subtract((dayLoop - x)-1, 'days').format("DD-MM-YYYY")
@@ -603,6 +615,7 @@ export const YieldReport = (props) => {
                                                 }else{
                                                     if (_cloneDeep(_endDate).subtract(defaultPay.length ? 0 : 1, 'days').format('MM') !== _startDate.format('MM')) {
                                                         param.endDate = param.startDate
+                                                        dayLoop = 1
                                                     }
                                                    
                                                     param.normalRate = rateRes.value
@@ -983,7 +996,6 @@ export const YieldReport = (props) => {
                                                         param.endDate = param.startDate
                                                     }
                                                     
-                                                    console.log('param.endDate', param.endDate)
                                                     param.normalRate = rateRes.value
                                                     param.rentalDay = dayLoop
                                                     // param.rentalDay = dateLoopCount > 0 ? dayLoop - dateLoopCount : dayLoop
@@ -1552,9 +1564,10 @@ export const YieldReport = (props) => {
                                     param.startDate = _startDate.format("DD-MM-YYYY")
                                     param.endDate = _endDate.format("DD-MM-YYYY")
                                     param.aging = day
-         
+       
                                     if (totalData > 0) {
                                         const rateRes = CountRate(day, masterCondition, element.rate)
+                                        
                                   
 
                                         if (rateRes.type === 'nomal') {
@@ -1618,7 +1631,7 @@ export const YieldReport = (props) => {
 
                                             } else {
                                                 let totalDate = DateFormat(invoiceDate).add(countDate, 'days')
-                                                let oldDate = CountDate(totalDate, startDate, [])
+                                                let oldDate = CountDate(totalDate, startDate, defaultPay.length ? [true] :[])
                                                 
                                                 let newTotalDate = CountDate(endDate, DateFormat(totalDate), [true])
                                                 if(totalDate.format('MM') !== _startDate.format("MM")){
@@ -1628,8 +1641,9 @@ export const YieldReport = (props) => {
                                                 if(oldDate > 0){
                                                     param.startDate = _startDate.format("DD-MM-YYYY")
                                                     param.endDate = totalDate.subtract(1, 'days').format("DD-MM-YYYY")
+                                                
                                                     param.normalRate = rateRes.oldValue
-                                                    param.rentalDay = oldDate
+                                                    param.rentalDay = (oldDate - (defaultPay.length ? 1 : 0))
                                                     param.aging = (day - newTotalDate)
                                                     if (param.rentalDay > 0) {
                                                         item.push(groupData(param, true, formatToFixed))

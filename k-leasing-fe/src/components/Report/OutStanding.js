@@ -36,10 +36,11 @@ const RenderDataList = (index, min, outstanding, rate, day, total, vat, preVat, 
         newTotal = newPreVat + newVat
     }
     INDEX_NO += 1
-    SUM_TOTAL_PREVAT += formatNumber(newPreVat)
-    SUM_TOTAL_AMOUNT += formatNumber(outstanding)
-    SUM_TOTAL_CHARGES += formatNumber(newTotal)
-    SUM_TOTAL_VAT += formatNumber(newVat)
+
+    SUM_TOTAL_PREVAT += formatNumber(newPreVat,2)
+    SUM_TOTAL_AMOUNT += formatNumber(outstanding,2)
+    SUM_TOTAL_CHARGES += formatNumber(newTotal,2)
+    SUM_TOTAL_VAT += formatNumber(newVat,2)
     SUM_TOTAL_WITHHOLDING = formatNumber((SUM_TOTAL_PREVAT * Number(defaultWithHolding)) / 100)
     if (!loanType) {
         SUM_TOTAL_VAT = formatNumber((SUM_TOTAL_PREVAT * Number(defaultVat)) / 100)
@@ -444,6 +445,9 @@ export const OutStanding = (props) => {
                                     } else {
                                         // dayLoop = day
                                         dayLoop = CountDate(paydate, monthInvoicLoop, [])
+                                        if(i > 0 && groupPaydate.length > 1 && Number(startDate.format('YYYYMMDD')) >= Number(monthInvoicLoop.format('YYYYMMDD'))){
+                                            dayLoop = CountDate(paydate, startDate, [])
+                                        }
                                     }
                                     // console.log('dayLoop', monthInvoicLoop.format('DD-MM-YYYY'),CountDate(paydate, monthInvoicLoop, []))
                                 } else {
@@ -1336,7 +1340,7 @@ export const OutStanding = (props) => {
                                 } else {
                                     // console.log('totalData ==', totalData,countDate,DateFormat(invoiceDate).format('YYYY-MM-DD'),day)
                                     const totalDate = DateFormat(invoiceDate).add(countDate, 'days')
-                                    const oldDate = CountDate(totalDate, startDate, [])
+                                    const oldDate = CountDate(totalDate, startDate, defaultPay.length ? [true] : [])
                                     let newTotalDate = CountDate(endDate, DateFormat(totalDate), [true])
                                     // console.log('totalDate.format== startDate.format("MM")', newTotalDate, DateFormat(totalDate).format('YYYY-MM-DD'), endDate.format('YYYY-MM-DD'))
                                     if(totalDate.format('MM') !== startDate.format("MM")){
@@ -1345,7 +1349,7 @@ export const OutStanding = (props) => {
                                     // console.log('oldDate', oldDate,newTotalDate)
                                     if (oldDate > 0) {
                                         param.rate = rateRes.oldValue
-                                        param.day = oldDate
+                                        param.day = (oldDate - (defaultPay.length ? 1 : 0))
 
                                         if (param.day > 0) {
 

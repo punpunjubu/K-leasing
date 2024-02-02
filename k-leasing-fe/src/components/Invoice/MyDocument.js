@@ -102,7 +102,7 @@ const MyDoc = (props) => {
             defaultVat
         }
     } = props
-    let preVat = _sumBy(listInvoice, e => formatNumber(e.preVat))
+    let preVat = _sumBy(listInvoice, e => formatNumber(e.preVat, 2))
     // let vat = _sumBy(listInvoice,  e => formatNumber(e.vat))
     // let withHolding = _sumBy(listInvoice,  e => formatNumber(e.withHolding))
     let vat = 0
@@ -113,7 +113,7 @@ const MyDoc = (props) => {
         textShow = 'ดอกเบี้ย'
     }
     let withHolding = formatNumber((preVat * Number(defaultWithHolding)) / 100)
-    const outstanding = _sumBy(listInvoice, e => formatNumber(e.outstanding))
+    const outstanding = _sumBy(listInvoice, e => formatNumber(e.outstanding,2))
     // const totalSum = _sumBy(listInvoice, e => formatNumber(e.total))
     const totalSum = (preVat + vat)
     const preVatTable = preVat
@@ -412,10 +412,10 @@ const MyDocDetail = (props) => {
             dateCustom
         }
     } = props
-    const outstanding = _sumBy(listInvoice, e => Number(e.outstanding))
-    const preVat = _sumBy(listInvoice, 'preVat')
-    const vat = _sumBy(listInvoice, 'vat')
-    const totalSum = _sumBy(listInvoice, 'total')
+    const outstanding = _sumBy(listInvoice, e => formatNumber(e.outstanding,2))
+    const preVat = _sumBy(listInvoice, e => formatNumber(e.preVat,2))
+    const vat = _sumBy(listInvoice, e => formatNumber(e.vat,2))
+    const totalSum = _sumBy(listInvoice, e => formatNumber(e.total,2))
 
     return (
         <Document>
