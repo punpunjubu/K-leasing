@@ -14,6 +14,7 @@ import Spinner from 'react-bootstrap/Spinner'
 
 
 import _isUndefined from 'lodash/isUndefined'
+import _ from 'lodash'
 export const SearchBarReport = (props) => {
     const {
         dealerCondition: { data, pending, error },
@@ -22,7 +23,9 @@ export const SearchBarReport = (props) => {
         datePropsActive,
         getStatusFile,
         notification,
-        statusFile: { data: statusData } } = props
+        statusFile: { data: statusData },
+         } = props
+
     const [activeDealer, setActiveDealer] = useState('F1069001')
     const [dateActive, setDateActive] = useState(moment().format('YYYY/MM'))
 
@@ -96,6 +99,7 @@ export const SearchBarReport = (props) => {
                         </Col>
                 }
             </Card>
+           
         </>
     )
 }
@@ -104,7 +108,8 @@ const mapStateToProps = (state) => {
     const {
         condition: {
             dealerCondition,
-            reportByDealer
+            reportByDealer,
+            reportStatement
         },
         inputData: {
             statusFile
@@ -113,7 +118,8 @@ const mapStateToProps = (state) => {
     return {
         dealerCondition,
         reportByDealer,
-        statusFile
+        statusFile,
+        reportStatement
     }
 }
 

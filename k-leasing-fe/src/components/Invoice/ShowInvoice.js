@@ -19,6 +19,7 @@ import _sumBy from 'lodash/sumBy'
 import _filter from 'lodash/filter'
 import _cloneDeep from 'lodash/cloneDeep'
 import _isNull from 'lodash/isNull'
+import _split from 'lodash/split'
 
 export const ShowInvoice = (props) => {
     const ref = createRef();
@@ -40,10 +41,11 @@ export const ShowInvoice = (props) => {
         },
         onTextCustom,
         dueDateShow,
-        dateShow } = props
+        dateShow,
+        reportStatementData } = props
     const [activeInvoice, setActiveInvoice] = useState(1)
-    const outstanding = _sumBy(listInvoice, (e) => Number(e.outstanding))
-    let preVat = _sumBy(listInvoice, e => formatNumber(e.preVat))
+    const outstanding = _sumBy(listInvoice, (e) => Number(e.outstanding,2))
+    let preVat = _sumBy(listInvoice, e => formatNumber(e.preVat,2))
     // let vat = _sumBy(listInvoice, e => (e.vat))
     let vat = 0
     if (dealer_condition_loan_type === "INVENTORY") {
@@ -193,8 +195,8 @@ export const ShowInvoice = (props) => {
                             </Row>
                             <Row>
                                 <Col>
-                                    <p className="m-0">{`ผลิตภัณฑ์สินเชื่อทุกประเภทของ บริษัท ลีสซิ่งกสิกรไทย จำกัด (สินเชื่อเช่าซื้อ สินเชื่อเช่าทางการเงิน สินเชื่อส่วนบุคคลภายใต้การกำกับที่มีทะเบียนรถเป็นประกัน และสินเชื่อเพื่อผู้แทนจำหน่ายรถยนต์) จะมีการเปลี่ยนแปลงเงื่อนไขเกี่ยวกับการคิดดอกเบี้ยผิดนัดชำระหนี้และการชำระสินเชื่อคืนแก่บริษัท เพื่อให้การคิดดอกเบี้ยผิดนัดชำระหนี้สอดคล้องกับข้อเท็จจริง และเกิดความเป็นธรรมมากขึ้น โดยลูกค้าสามารถเข้าไปดูรายละเอียดได้ตาม URL ด้านล่าง`}</p>
-                                    <p>{`https://www.kasikornleasing.com/th/news/Pages/Default-Interest.aspx`}</p>
+                                    <p className="m-0">{reportStatementData && reportStatementData[0]  ? reportStatementData[0].description : ''}</p>
+                                    <p>{reportStatementData && reportStatementData[0]  ? reportStatementData[0].url : ''}</p>
                                 </Col>
                             </Row>
                             <Row>
@@ -225,12 +227,17 @@ export const ShowInvoice = (props) => {
                                 <tbody>
                                     {
                                         listInvoice.map((res, index) => {
+                                            const spRate = _split(parseFloat(parseFloat(res.rate).toFixed(6)), '.')
+                                            let toFixed = 2
+                                            if (spRate.length === 2) {
+                                                toFixed = res.formatToFixed
+                                            }
                                             return (
                                                 <tr key={index}>
                                                     <td>{index + 1}</td>
                                                     <td>{res.midno}</td>
                                                     <td>{formatAmount(res.outstanding)}</td>
-                                                    <td>{formatAmount(res.rate)}</td>
+                                                    <td>{formatAmount(res.rate,toFixed)}</td>
                                                     <td>{res.day}</td>
                                                     <td>{formatAmount(res.preVat)}</td>
                                                     <td>{formatAmount(res.vat)}</td>

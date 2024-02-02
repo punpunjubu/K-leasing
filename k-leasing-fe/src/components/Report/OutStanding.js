@@ -23,7 +23,7 @@ let SUM_TOTAL_WITHHOLDING = 0
 
 
 
-const RenderDataList = (index, min, outstanding, rate, day, total, vat, preVat, withHolding, loanType, defaultWithHolding, defaultVat) => {
+const RenderDataList = (index, min, outstanding, rate, day, total, vat, preVat, withHolding, loanType, defaultWithHolding, defaultVat, formatToFixed) => {
 
     let newPreVat = preVat
     let newVat = vat
@@ -36,21 +36,27 @@ const RenderDataList = (index, min, outstanding, rate, day, total, vat, preVat, 
         newTotal = newPreVat + newVat
     }
     INDEX_NO += 1
-    SUM_TOTAL_PREVAT += formatNumber(newPreVat)
-    SUM_TOTAL_AMOUNT += formatNumber(outstanding)
-    SUM_TOTAL_CHARGES += formatNumber(newTotal)
-    SUM_TOTAL_VAT += formatNumber(newVat)
+
+    SUM_TOTAL_PREVAT += formatNumber(newPreVat,2)
+    SUM_TOTAL_AMOUNT += formatNumber(outstanding,2)
+    SUM_TOTAL_CHARGES += formatNumber(newTotal,2)
+    SUM_TOTAL_VAT += formatNumber(newVat,2)
     SUM_TOTAL_WITHHOLDING = formatNumber((SUM_TOTAL_PREVAT * Number(defaultWithHolding)) / 100)
     if (!loanType) {
         SUM_TOTAL_VAT = formatNumber((SUM_TOTAL_PREVAT * Number(defaultVat)) / 100)
         SUM_TOTAL_WITHHOLDING = formatNumber((SUM_TOTAL_PREVAT * Number(defaultWithHolding)) / 100)
+    }
+    const spRate = _.split(parseFloat(parseFloat(rate).toFixed(6)), '.')
+    let toFixed = 2
+    if(spRate.length === 2){
+        toFixed = formatToFixed
     }
     return (
         <tr key={INDEX_NO}>
             <td>{INDEX_NO}</td>
             <td>{min}</td>
             <td>{formatAmount(outstanding)}</td>
-            <td>{formatAmount(rate)}</td>
+            <td>{formatAmount(rate,toFixed)}</td>
             <td>{day}</td>
             <td>{formatAmount(newPreVat)}</td>
             <td>{formatAmount(newVat)}</td>
@@ -92,7 +98,7 @@ export const OutStanding = (props) => {
     } = props
 
 
-    const groupData = (data) => {
+    const groupData = (data,formatToFixed) => {
         let {
             outstanding,
             rate,
@@ -121,7 +127,8 @@ export const OutStanding = (props) => {
             withHolding,
             loanType,
             defaultWithHolding,
-            defaultVat
+            defaultVat,
+            formatToFixed
         )
     }
 
@@ -130,10 +137,10 @@ export const OutStanding = (props) => {
             out_standing,
             default_file,
             master_condition,
+            master_condition_spec,
             payment,
             date
         } = reportData
-
         if (_isUndefined(out_standing) || !out_standing) {
             return NoDataRender()
         }
@@ -150,28 +157,76 @@ export const OutStanding = (props) => {
         if (_isUndefined(dealer)) {
             return NoDataRender()
         }
-        const masterCondition = _find(master_condition, (e) => e.type === Number(dealer.dealer_condition_type_curtailment))
+        let masterCondition = _find(master_condition, (e) => e.type === Number(dealer.dealer_condition_type_curtailment))
+
+ 
+
         const findNormalRate  = _find(mor_mlr, (e) => e.master_interest_type === dealer.dealer_condition_nor_rate_type.toLocaleLowerCase())
-        let   nRate           = []
-        for (let index = 0; index < 4; index++) {
-            if (index === 0) {
-                nRate.push({
-                    rate: Number(findNormalRate.master_interest_start_rate) + Number(dealer.dealer_condition_nor_rate),
-                    date: DateFormat(date).startOf('month')
-                })
-            } else if (!_isUndefined(findNormalRate[`master_interest_start_rate_${index}`])
-                && !_isUndefined(findNormalRate[`master_interest_date_rate_${index}`])
-                && !_isNull(findNormalRate[`master_interest_start_rate_${index}`])
-                && !_isNull(findNormalRate[`master_interest_date_rate_${index}`])
-                && findNormalRate[`master_interest_start_rate_${index}`]
-                && findNormalRate[`master_interest_date_rate_${index}`]) {
-                const rate = findNormalRate[`master_interest_start_rate_${index}`]
-                nRate.push({
-                    rate: Number(rate) + Number(dealer.dealer_condition_nor_rate),
-                    date: DateFormat(findNormalRate[`master_interest_date_rate_${index}`])
-                })
+
+        let nRate = []
+        let formatToFixed = 2
+        for (let index = 0; index < 2; index++) {
+            if(!_isUndefined(mor_mlr[index]) && mor_mlr[index]){
+                for (let index2 = 0; index2 < 4; index2++) {
+                    if (index2 === 0) {
+                        const rate = _.split(parseFloat(mor_mlr[index].master_interest_start_rate), '.')
+                        let toFixed = 2
+                        if(rate.length === 2){
+                            if(rate[1].length > 6){
+                                toFixed = 6
+                            }else{
+                                toFixed = rate[1].length
+                            }
+                        }
+                        if(formatToFixed < toFixed){
+                            formatToFixed = toFixed
+                        }
+                    }else{
+                        if(!_isUndefined(mor_mlr[index][`master_interest_start_rate_${index2}`]) && !_isNull(mor_mlr[index][`master_interest_start_rate_${index2}`]) && mor_mlr[index][`master_interest_start_rate_${index2}`]){
+                            const rate = _.split(parseFloat(mor_mlr[index][`master_interest_start_rate_${index2}`]), '.')
+                            let toFixed = 2
+                            if(rate.length === 2){
+                                if(rate[1].length > 6){
+                                    toFixed = 6
+                                }else{
+                                    toFixed = rate[1].length
+                                }
+                            }
+                            if(formatToFixed < toFixed){
+                                formatToFixed = toFixed
+                            }
+                        }
+                    }
+                }
             }
         }
+
+            for (let index = 0; index < 4; index++) {
+                if (index === 0) {
+                    nRate.push({
+                        rate: Number(findNormalRate.master_interest_start_rate) + Number(dealer.dealer_condition_nor_rate),
+                        date: DateFormat(date).startOf('month')
+                    })
+                } else if (!_isUndefined(findNormalRate[`master_interest_start_rate_${index}`])
+                    && !_isUndefined(findNormalRate[`master_interest_date_rate_${index}`])
+                    && !_isNull(findNormalRate[`master_interest_start_rate_${index}`])
+                    && !_isNull(findNormalRate[`master_interest_date_rate_${index}`])
+                    && findNormalRate[`master_interest_start_rate_${index}`]
+                    && findNormalRate[`master_interest_date_rate_${index}`]) {
+
+                    const rate = findNormalRate[`master_interest_start_rate_${index}`]
+
+                    let dealer_condition_nor_rate = Number(dealer.dealer_condition_nor_rate)
+                    if(dealer.startdate_1 && dealer.enddate_2 && dealer.nor_rate_1 && dealer.nor_ratetype_1){
+                        dealer_condition_nor_rate = 0
+                    }
+                    nRate.push({
+                        rate: Number(rate) + dealer_condition_nor_rate,
+                        date: DateFormat(findNormalRate[`master_interest_date_rate_${index}`])
+                    })
+                }
+            }
+       
 
         for (let index = 0; index < nRate.length; index++) {
             let element = nRate[index];
@@ -183,6 +238,42 @@ export const OutStanding = (props) => {
 
             }
         }
+       
+        if(dealer.startdate_1 && dealer.enddate_1 && dealer.nor_rate_1 && dealer.nor_ratetype_1){
+            let newNRate = []
+            const countNRate = (nRate.length - 1)
+            const dateText = nRate[countNRate].date.format('YYYY/MM/')
+            const rate = nRate[0].rate
+         
+                newNRate.push({
+                    rate:  rate + Number(dealer.nor_rate_1),
+                    date:  nRate[0].date,
+                    endDate: DateFormat(`${dateText}${dealer.enddate_1}`)
+                })
+            
+            if(dealer.startdate_2 && dealer.enddate_2 && dealer.nor_rate_2){
+                newNRate.push({
+                    rate:  rate + Number(dealer.nor_rate_2),
+                    date:  DateFormat(`${dateText}${dealer.startdate_2}`),
+                    endDate: DateFormat(`${dateText}${dealer.enddate_2}`)
+                })
+            }
+            if(dealer.startdate_3 && dealer.enddate_3 && dealer.nor_rate_3){
+                newNRate.push({
+                    rate:  rate + Number(dealer.nor_rate_3),
+                    date:  DateFormat(`${dateText}${dealer.startdate_3}`),
+                    endDate: DateFormat(`${dateText}${dealer.enddate_3}`)
+                })
+            }
+            if(dealer.startdate_4 && dealer.enddate_4 && dealer.nor_rate_4){
+                newNRate.push({
+                    rate:  rate + Number(dealer.nor_rate_4),
+                    date:  DateFormat(`${dateText}${dealer.startdate_4}`),
+                    endDate: DateFormat(`${dateText}${dealer.enddate_4}`)
+                })
+            }
+            nRate = newNRate
+        }
 
         let normalRate = Number(findNormalRate.master_interest_start_rate) + Number(dealer.dealer_condition_nor_rate)
 
@@ -191,6 +282,7 @@ export const OutStanding = (props) => {
         const loanType           = dealer.dealer_condition_loan_type === "INVENTORY" ? false : true
         const defaultWithHolding = loanType ? loan.loan_type_tax : inventory.loan_type_tax
         const defaultVat         = loanType ? loan.loan_type_vat : inventory.loan_type_vat
+
 
         out_standing.map((res, index) => {
             const midno           = res.out_standing_midno
@@ -201,6 +293,12 @@ export const OutStanding = (props) => {
             const paymentPay      = payment.length && _find(payment, (e) => e.payment_mid === res.out_standing_midno) || ''
             const franchise       = res.out_standing_franchise
 
+            let masterConditionSpec =  ''
+            if(master_condition_spec && !_.isUndefined(master_condition_spec) && !_.isNull(master_condition_spec) && master_condition_spec.length && res.type_curtailment_spec){
+                masterConditionSpec = _find(master_condition_spec, (e) => e.type === Number(res.type_curtailment_spec))
+                masterCondition = masterConditionSpec
+            }
+           
             let param = {
                 outstanding,
                 rate: 1,
@@ -212,7 +310,6 @@ export const OutStanding = (props) => {
                 midno
             }
             if (midno !== '') { // check id bug 024598
-                // console.log('midno', midno,defaultPay,paymentPay)
                 let startDate = DateFormat(date).startOf('month')
                 // startDate = DateFormat('2021-07-11')
                 let endDate = DateFormat(date).endOf('month')
@@ -344,16 +441,19 @@ export const OutStanding = (props) => {
                                     if (Number(endDate.format('D')) > Number(paydate.format('D'))) {
                                         dayLoop = CountDate(paydate, startDate, [])
                                         // endDate = paydate
-                                       
+                                     
                                     } else {
                                         // dayLoop = day
                                         dayLoop = CountDate(paydate, monthInvoicLoop, [])
+                                        if(i > 0 && groupPaydate.length > 1 && Number(startDate.format('YYYYMMDD')) >= Number(monthInvoicLoop.format('YYYYMMDD'))){
+                                            dayLoop = CountDate(paydate, startDate, [])
+                                        }
                                     }
                                     // console.log('dayLoop', monthInvoicLoop.format('DD-MM-YYYY'),CountDate(paydate, monthInvoicLoop, []))
                                 } else {
                                     if (Number(endDate.format('D')) > Number(paydate.format('D'))) {
                                         dayLoop = CountDate(paydate, startDate, [])
-                                        if(Number(startDate.format('D')) === Number(paydate.format('D'))){
+                                        if(Number(startDate.format('D')) === Number(paydate.format('D')) && paydate.format('DD') != '01'){
                                             dayLoop = CountDate(paydate, startDate, [true])
                                         }
                                     } else {
@@ -423,7 +523,7 @@ export const OutStanding = (props) => {
                                     }
                                 }
                             }
-                           
+                        //    console.log('element.rate', element.rate)
                             const rateRes = CountRate(day, masterCondition, element.rate)
 
               
@@ -513,6 +613,7 @@ export const OutStanding = (props) => {
                                                 dayLoop = CountDate(_cloneDeep(endDate), startDateRentalDay, [true])
                                             }
                                         }
+
                                         if(dayLoop > 0 && defaultPay.length){
                                             if(endDate.format('YYYY/MM/DD') == DateFormat(endDate).endOf('month').format('YYYY/MM/DD') && paydate.format('YYYY/MM/DD') == endDate.format('YYYY/MM/DD')){
                                                 const sumAmount = _sumBy(groupPaydate, function (o) { return Number(o.amount); })
@@ -524,13 +625,12 @@ export const OutStanding = (props) => {
 
                                         }
 
-
                                         param.rate = rateRes.value
                                         param.day = dayLoop
 
                                         if (param.day > 0) {
                                             lastDateEnd = setLastDateEnd
-                                            item.push(groupData(param))
+                                            item.push(groupData(param, formatToFixed))
                                         }else{
                                             day = lastDay
                                         }
@@ -540,7 +640,7 @@ export const OutStanding = (props) => {
 
                                         if (param.day > 0) {
                                             lastDateEnd = setLastDateEnd
-                                            item.push(groupData(param))
+                                            item.push(groupData(param, formatToFixed))
                                         }else{
                                             day = lastDay
                                         }
@@ -587,10 +687,7 @@ export const OutStanding = (props) => {
                                             setLastDateEnd = _cloneDeep(paydate).subtract(1,'day')
                                         }
                                     }
-                                    if(paydate.format('YYYY/MM/DD') > endDate.format('YYYY/MM/DD')){
-                                        newPaydate = CountDate(endDate, totalDataInvoice, [true])
-                                        setLastDateEnd = endDate
-                                    }
+                                    //new
                                     if (oldDate <= 0 && nRate.length === 1 && totalDataInvoice.format('YYYY/MM/DD') < startDate.format('YYYY/MM/DD') && paydate.format('YYYY/MM/DD') >= startDate.format('YYYY/MM/DD')) {
                                         newPaydate = CountDate(paydate, startDate,  defaultPay)
                                         if(defaultPay.length){
@@ -599,10 +696,19 @@ export const OutStanding = (props) => {
                                             setLastDateEnd = _cloneDeep(paydate).subtract(1,'day')
                                         }
                                     }
+
+                                    // if(Number(paydate.format('YYYYMMDD')) > Number(endDate.format('YYYYMMDD'))){
+                                    //     if(Number(startDate.format('YYYYMMDD')) > Number(totalDataInvoice.format('YYYYMMDD'))){
+                                    //         newPaydate = CountDate(endDate, startDate, [true])
+                                    //     }else{
+                                    //         newPaydate = CountDate(endDate, totalDataInvoice, [true])
+                                    //     }
+                                    //     setLastDateEnd = endDate
+                                    // }
                                     // console.log('oldDate',oldDate,'newPaydate', newPaydate,'dateLoopCount',dateLoopCount)
                                     if (dateLoopCount !== 0 && dateLoopCount > 0) {
                                         const dayTotalCal = dayLoop - dateLoopCount
-                                        if (dayTotalCal > 0) {
+                                        if (dayTotalCal > 0 && groupPaydate.length == 1) {
                                             oldDate = CountDate(totalDataInvoice, DateFormat(groupPaydate[i - 1].paydate), [])
                                             if (nRate.length > 1) {
                                                 if (index > 0) {
@@ -615,12 +721,11 @@ export const OutStanding = (props) => {
                                                 newPaydate = dayTotalCal
                                             }
                                         }
-
                                     }else  if (dateLoopCount !== 0 && dateLoopCount < 0) {
                                         if(nRate.length > 1){
-                              
-                                            if(index > 0 && groupPaydate.length > 1 && index != (nRate.length - 1)){
-                                                oldDate = CountDate(totalDataInvoice, _cloneDeep(DateFormat(groupPaydate[i - 1].paydate)).add(1,'day'), [])
+                                            const inPaydate = _cloneDeep(DateFormat(groupPaydate[i - 1].paydate)).add(1,'day')
+                                            if(index > 0 && groupPaydate.length > 1 && index != (nRate.length - 1) && Number(startDate.format('YYYYMMDD')) < Number(inPaydate.format('YYYYMMDD'))){
+                                                oldDate = CountDate(totalDataInvoice, inPaydate, [])
                                             }
                                         }
                                     }else if (dateLoopCount === 0) {
@@ -633,10 +738,12 @@ export const OutStanding = (props) => {
                                                     newPaydate = Number(paydate.format('D')) - oldDate
                                                 }
                                             }else if(listTypeDay.includes(countDate) && oldDate != (Number(totalDataInvoice.format('D')) - Number(startDate.format('D')) + 1)){
-                                                oldDate = Number(totalDataInvoice.format('D'))
-                                                newPaydate = Number(paydate.format('D')) - oldDate - 1
-                                                if (defaultPay.length) {
-                                                    newPaydate = Number(paydate.format('D')) - oldDate
+                                                if(countDate >= CountDate(totalDataInvoice,monthInvoicLoop,[true])){
+                                                    oldDate = Number(totalDataInvoice.format('D'))
+                                                    newPaydate = Number(paydate.format('D')) - oldDate - 1
+                                                    if (defaultPay.length) {
+                                                        newPaydate = Number(paydate.format('D')) - oldDate
+                                                    }
                                                 }
                                             }
                                             
@@ -675,9 +782,11 @@ export const OutStanding = (props) => {
                                                   
                                                 }
                                             }else if(listTypeDay.includes(countDate) && oldDate < 0){
-                                                if(element.date <= startDate && element.endDate >= startDate){
+                                                if(Number(element.date.format('YYYYMMDD')) <= Number(startDate.format('YYYYMMDD')) && Number(element.endDate.format('YYYYMMDD')) >= Number(startDate.format('YYYYMMDD'))){
                                                     console.log('2')
-                                                    newPaydate = CountDate(paydate, startDate, defaultPay)
+                                                    if(Number(element.endDate.format('YYYYMMDD')) >= Number(paydate.format('YYYYMMDD'))){
+                                                        newPaydate = CountDate(paydate, startDate, defaultPay)
+                                                    }
                                                 }
                                             }else if(index > 0 && listTypeDay.includes(countDate) && index != (nRate.length - 1) && startDate.format('YYYY/MM/DD') != totalDataInvoice.format('YYYY/MM/DD') && totalDataInvoice.format('YYYY/MM/DD') > paydate.format('YYYY/MM/DD')){
 
@@ -723,9 +832,9 @@ export const OutStanding = (props) => {
                                                 }
                                                 // console.log('param.day', param.day)
                                                 if (param.day > 0) {
-                                                    console.log('setLastDateEnd', setLastDateEnd.format('YYYY/MM/DD'))
+                                                   
                                                     lastDateEnd = setLastDateEnd
-                                                    item.push(groupData(param))
+                                                    item.push(groupData(param, formatToFixed))
                                                 }
                                             }
                                         } else {
@@ -734,7 +843,7 @@ export const OutStanding = (props) => {
                                             if (param.day > 0) {
                                                 lastDateEnd = setLastDateEnd
                                               
-                                                item.push(groupData(param))
+                                                item.push(groupData(param, formatToFixed))
                                             }
                                         }
                                     } else {
@@ -755,11 +864,11 @@ export const OutStanding = (props) => {
                                         }
                     
                                         param.rate = rateRes.value
+                                        // param.day = dateLoopCount > 0 ? dayLoop - dateLoopCount : dayLoop
                                         param.day = dayLoop
                                         if(nRate.length > 1){
                                             param.day = dateLoopCount > 0 ? dayLoop - dateLoopCount : dayLoop
                                         }
-                                 
                                         if(param.day > 0 && defaultPay.length){
                                             if(endDate.format('YYYY/MM/DD') == DateFormat(endDate).endOf('month').format('YYYY/MM/DD') && paydate.format('YYYY/MM/DD') == endDate.format('YYYY/MM/DD')){
                                                 const sumAmount = _sumBy(groupPaydate, function (o) { return Number(o.amount); })
@@ -773,7 +882,7 @@ export const OutStanding = (props) => {
 
                                         if (param.day > 0) {
                                             lastDateEnd = setLastDateEnd
-                                            item.push(groupData(param))
+                                            item.push(groupData(param, formatToFixed))
                                         }else{
                                             day = lastDay
                                         }
@@ -853,7 +962,7 @@ export const OutStanding = (props) => {
                                         param.rate = rateRes.value
                                         param.day  = dayNomal
                                         if (param.day > 0) {
-                                            item.push(groupData(param))
+                                            item.push(groupData(param, formatToFixed))
                                         }
                                     } else {
                                         let countDate = rateRes.type - 30
@@ -869,7 +978,7 @@ export const OutStanding = (props) => {
                                                 param.rate = rateRes.value
                                                 param.day = oldDate
                                                 if (param.day > 0) {
-                                                    item.push(groupData(param))
+                                                    item.push(groupData(param, formatToFixed))
                                                 }
                                             } else {
                                                 totalDate = _cloneDeep(DateFormat(invoiceDate)).add(359, 'days')
@@ -877,7 +986,7 @@ export const OutStanding = (props) => {
                                                 param.rate = rateRes.oldValue
                                                 param.day = oldDate
                                                 if (param.day > 0) {
-                                                    item.push(groupData(param))
+                                                    item.push(groupData(param, formatToFixed))
                                                 }
                                             }
 
@@ -886,6 +995,8 @@ export const OutStanding = (props) => {
                                             let totalDataInvoice = _cloneDeep(DateFormat(invoiceDate)).add(countDate, 'days')
                                             if(totalDataInvoice.format('YYYY/MM/DD') > element.endDate.format('YYYY/MM/DD')){
                                                 totalDataInvoice =  element.endDate
+                                            }else if( Number(element.date.format('DDMMYYYY')) > Number(addLastDate.format('DDMMYYYY'))){
+                                                addLastDate = element.date
                                             }
                                             let oldDate = CountDate(totalDataInvoice, addLastDate, [])
                                             let newPaydate = CountDate(element.endDate,_cloneDeep(totalDataInvoice), [true])
@@ -921,13 +1032,6 @@ export const OutStanding = (props) => {
                                                         newPaydate = CountDate(element.endDate, addLastDate, [true])
                                                     }
                                                 }
-                                                // oldDate = CountDate(totalDataInvoice,element.date , [true])
-                                                // newPaydate = CountDate(element.endDate, totalDataInvoice, [])
-                                               
-                                                // if((dayRate-lastDay) <= (oldDate+newPaydate)){
-                                                //     oldDate = 0
-                                                //     newPaydate = CountDate(element.endDate,addLastDate , [true])   
-                                                // }
                                                 console.log('3')
                                             }else{
                                                 if(oldDate < 0){
@@ -941,18 +1045,18 @@ export const OutStanding = (props) => {
                                                 param.rate = rateRes.oldValue
                                                 param.day = oldDate
                                                 if (param.day > 0) {
-                                                    item.push(groupData(param))
+                                                    item.push(groupData(param, formatToFixed))
                                                 }
                                                 param.rate = rateRes.value
                                                 param.day = newPaydate
                                                 if (param.day > 0) {
-                                                    item.push(groupData(param))
+                                                    item.push(groupData(param, formatToFixed))
                                                 }
                                             } else {
                                                 param.rate = rateRes.value
                                                 param.day = newPaydate
                                                 if (param.day > 0) {
-                                                    item.push(groupData(param))
+                                                    item.push(groupData(param, formatToFixed))
                                                 }
                                             }
                                         }
@@ -972,14 +1076,14 @@ export const OutStanding = (props) => {
                                         param.rate = rateRes.value
                                         param.day  = day
                                         if (param.day > 0) {
-                                            item.push(groupData(param))
+                                            item.push(groupData(param, formatToFixed))
                                         }
                                     } else if(isCheckDefault){
                                         if (rateRes.type === 'nomal') {
                                             param.rate = rateRes.value
                                             param.day  = day
                                             if (param.day > 0) {
-                                                item.push(groupData(param))
+                                                item.push(groupData(param, formatToFixed))
                                             }
                                         } else {
                                             let countDate = rateRes.type - 30
@@ -992,7 +1096,7 @@ export const OutStanding = (props) => {
                                                     param.rate = rateRes.value
                                                     param.day = oldDate
                                                     if (param.day > 0) {
-                                                        item.push(groupData(param))
+                                                        item.push(groupData(param, formatToFixed))
                                                     }
                                                 } else {
                                                     totalDate = _cloneDeep(DateFormat(invoiceDate)).add(359, 'days')
@@ -1000,7 +1104,7 @@ export const OutStanding = (props) => {
                                                     param.rate = rateRes.oldValue
                                                     param.day = oldDate
                                                     if (param.day > 0) {
-                                                        item.push(groupData(param))
+                                                        item.push(groupData(param, formatToFixed))
                                                     }
                                                 }
             
@@ -1014,18 +1118,18 @@ export const OutStanding = (props) => {
                                                     param.rate = rateRes.oldValue
                                                     param.day = oldDate
                                                     if (param.day > 0) {
-                                                        item.push(groupData(param))
+                                                        item.push(groupData(param,formatToFixed))
                                                     }
                                                     param.rate = rateRes.value
                                                     param.day = newPaydate
                                                     if (param.day > 0) {
-                                                        item.push(groupData(param))
+                                                        item.push(groupData(param,formatToFixed))
                                                     }
                                                 } else {
                                                     param.rate = rateRes.value
                                                     param.day = newPaydate
                                                     if (param.day > 0) {
-                                                        item.push(groupData(param))
+                                                        item.push(groupData(param,formatToFixed))
                                                     }
                                                 }
                                             }
@@ -1070,7 +1174,11 @@ export const OutStanding = (props) => {
                         let   newDueDate = CountDate(defaultPayDate, DateFormat(dueDate), defaultPay)
 
                         if (startDate.year() !== dueDate.year() || dueDate.month() !== startDate.month()) {
-                            newDueDate = CountDate(defaultPayDate, startDate, defaultPay)
+                            if(startDate.format('YYYYMMDD') <= defaultPayDate.format('YYYYMMDD')){ // เพิ่มใหม่
+                                newDueDate = CountDate(defaultPayDate, _cloneDeep(defaultPayDate).startOf('month'), defaultPay)
+                            }else{
+                                newDueDate = CountDate(defaultPayDate, startDate, defaultPay)
+                            }
                         }
                  
 
@@ -1118,14 +1226,17 @@ export const OutStanding = (props) => {
                             }
                         }
                         const defaultRate = element.default_default_rate
-                        if (element.default_default === "AGING") {
+                        // if (element.default_default === "AGING") {
+                        //     param.outstanding = element.default_installment
+                        // }
+                        if(element.default_installment){
                             param.outstanding = element.default_installment
                         }
                         param.rate = defaultRate
                         param.day  = newDueDate
                         if (param.day > 0 && dayInterestCal >= 0) {
                             if(calculateByFranchise){
-                                item.push(groupData(param))
+                                item.push(groupData(param,formatToFixed))
                             }
                         }
 
@@ -1137,6 +1248,7 @@ export const OutStanding = (props) => {
                     console.log('ไม่มี paymentPay')
                     param.outstanding = outstanding
                     let dayDefault = 0
+                   
                     for (let index = 0; index < nRate.length; index++) {
                         const element = nRate[index];
                         startDate = _cloneDeep(element.date)
@@ -1179,7 +1291,7 @@ export const OutStanding = (props) => {
                                 param.rate = rateRes.value
                                 param.day = totalData
                                 if (param.day > 0) {
-                                    item.push(groupData(param))
+                                    item.push(groupData(param,formatToFixed))
                                 }
                             } else {
                                 let countDate = rateRes.type - 30
@@ -1192,13 +1304,20 @@ export const OutStanding = (props) => {
                                         param.rate = rateRes.value
                                         param.day = oldDate
                                         if (param.day > 0) {
-                                            item.push(groupData(param))
+                                            item.push(groupData(param,formatToFixed))
                                         }
                                     } else {
                                         // if(index != 0 && i > 0 && invoiceDate.format('YYYY/MM/DD') < startDate.format('YYYY/MM/DD')){
                                         //     invoiceDate = startDate
                                         // }
                                         totalDate = DateFormat(invoiceDate).add(359, 'days')
+                                        if(Number(startDate.format('MM')) != Number(totalDate.format('MM'))){
+                                            param.rate = rateRes.value
+                                            param.day = oldDate
+                                            if (param.day > 0) {
+                                                item.push(groupData(param,formatToFixed))
+                                            }
+                                        }else{
                                         oldDate = CountDate(totalDate, startDate, [true])
                                         let newPaydate = CountDate(endDate, totalDate, [])
                                         if(totalDate.format('DD/MM/YYYY') < startDate.format('DD/MM/YYYY')){
@@ -1208,19 +1327,20 @@ export const OutStanding = (props) => {
                                         param.rate = rateRes.oldValue
                                         param.day = oldDate
                                         if (param.day > 0) {
-                                            item.push(groupData(param))
+                                            item.push(groupData(param,formatToFixed))
                                         }
                                         param.rate = rateRes.value
                                         param.day = newPaydate
                                         if (param.day > 0) {
-                                            item.push(groupData(param))
+                                            item.push(groupData(param,formatToFixed))
                                         }
+                                    }
                                     }
 
                                 } else {
                                     // console.log('totalData ==', totalData,countDate,DateFormat(invoiceDate).format('YYYY-MM-DD'),day)
                                     const totalDate = DateFormat(invoiceDate).add(countDate, 'days')
-                                    const oldDate = CountDate(totalDate, startDate, [])
+                                    const oldDate = CountDate(totalDate, startDate, defaultPay.length ? [true] : [])
                                     let newTotalDate = CountDate(endDate, DateFormat(totalDate), [true])
                                     // console.log('totalDate.format== startDate.format("MM")', newTotalDate, DateFormat(totalDate).format('YYYY-MM-DD'), endDate.format('YYYY-MM-DD'))
                                     if(totalDate.format('MM') !== startDate.format("MM")){
@@ -1229,17 +1349,17 @@ export const OutStanding = (props) => {
                                     // console.log('oldDate', oldDate,newTotalDate)
                                     if (oldDate > 0) {
                                         param.rate = rateRes.oldValue
-                                        param.day = oldDate
+                                        param.day = (oldDate - (defaultPay.length ? 1 : 0))
 
                                         if (param.day > 0) {
 
-                                            item.push(groupData(param))
+                                            item.push(groupData(param,formatToFixed))
                                         }
                                         param.rate = rateRes.value
                                         param.day = newTotalDate
 
                                         if (param.day > 0) {
-                                            item.push(groupData(param))
+                                            item.push(groupData(param,formatToFixed))
                                         }
                                     } else {
                                          let  rentalDaySum = newTotalDate
@@ -1249,7 +1369,7 @@ export const OutStanding = (props) => {
                                         param.rate = rateRes.value
                                         param.day = rentalDaySum
                                         if (param.day > 0) {
-                                            item.push(groupData(param))
+                                            item.push(groupData(param,formatToFixed))
                                         }
                                     }
                                 }
@@ -1303,6 +1423,7 @@ const mapStateToProps = (state) => {
             dealerCondition,
             reportByDealer,
             masterInterest,
+            masterSpecInterest,
             loanType
         }
     } = state
@@ -1310,6 +1431,7 @@ const mapStateToProps = (state) => {
         dealerCondition,
         reportByDealer,
         masterInterest,
+        masterSpecInterest,
         loanType
     }
 }

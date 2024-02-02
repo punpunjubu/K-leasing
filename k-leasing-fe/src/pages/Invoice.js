@@ -13,7 +13,7 @@ export class InvoicePage extends Component {
 
     }
     componentDidMount() {
-        const { getDealerCondition, masterInterest: { data }, getMaster, loanType: { data: dataLoan }, getLoanType } = this.props
+        const { getDealerCondition, masterInterest: { data }, getMaster, loanType: { data: dataLoan }, getLoanType, getReportStatement, userData :{ data : userData } } = this.props
         getDealerCondition()
         if (_isUndefined(data)) {
             getMaster()
@@ -21,6 +21,7 @@ export class InvoicePage extends Component {
         if (_isUndefined(dataLoan)) {
             getLoanType()
         }
+        getReportStatement(userData.user_id)
     }
     componentDidUpdate(prevProps, prevState) {
         const { masterInterest: { data }, getMaster, loanType: { data: dataLoan }, getLoanType } = this.props
@@ -51,19 +52,22 @@ const mapStateToProps = (state) => {
         condition: {
             masterInterest,
             loanType
-        }
+        },
+        auth:{userData}
 
     } = state
     return {
         masterInterest,
-        loanType
+        loanType,
+        userData
     }
 }
 
 const mapDispatchToProps = {
     getDealerCondition: Condition.getDealerCondition,
-    getMaster: Condition.getMaster,
-    getLoanType: Condition.getLoanType
+    getMaster         : Condition.getMaster,
+    getLoanType       : Condition.getLoanType,
+    getReportStatement: Condition.getReportStatement
 }
 
 export default connect(mapStateToProps, mapDispatchToProps)(InvoicePage)

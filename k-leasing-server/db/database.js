@@ -41,6 +41,7 @@ const getMasterData = () => {
     const sql = `SELECT * FROM master_interest ORDER BY master_interest_create_at DESC LIMIT 2;`;
     return callQuery(sql, [])
 }
+
 const getLoanTypeData = () => {
     const sql = `SELECT * FROM loan_type ORDER BY loan_type_create_at DESC LIMIT 2;`;
     return callQuery(sql, [])
@@ -55,6 +56,14 @@ const getDealerCondition = (type = 'limit') => {
 }
 const getMasterCondition = (type = 'limit') => {
     let sql = `SELECT * FROM master_condition`;
+    let where = []
+    if (type === 'limit') {
+        sql += ` LIMIT 1;`
+    }
+    return callQuery(sql, where)
+}
+const getMasterSpecCondition = (type = 'limit') => {
+    let sql = `SELECT * FROM master_condition_special`;
     let where = []
     if (type === 'limit') {
         sql += ` LIMIT 1;`
@@ -96,6 +105,8 @@ const getSearchReportByDealer = async (param) => {
     data.payment = await callQuery(sql_payment, [dealer, month, month, month, month, month, month])
     const sql_master_condition = `SELECT * FROM master_condition;`;
     data.master_condition = await callQuery(sql_master_condition, [])
+    const sql_master_condition_spec = `SELECT * FROM master_condition_special;`;
+    data.master_condition_spec = await callQuery(sql_master_condition_spec, [])
     const sql_default_file = `SELECT * FROM default_file WHERE default_dealer_code = ?;`;
     data.default_file = await callQuery(sql_default_file, [dealer])
     return data
@@ -116,6 +127,22 @@ const getMasterConditionAll = async () => {
     const sql_master_condition = `SELECT * FROM master_condition;`;
     return await callQuery(sql_master_condition, [])
 }
+const getMasterSpecConditionAll = async () => {
+    const sql_master_condition = `SELECT * FROM master_condition_special;`;
+    return await callQuery(sql_master_condition, [])
+}
+const getReportStatement = async (userId) => {
+
+    const sql = `SELECT * FROM report_statement WHERE add_by_user_id = ? LIMIT 1;`;
+    return await callQuery(sql, [userId])
+}
+
+const updateReportStatement = (param) => {
+    const { description, user_id, url, id  } = param
+    const sql = `UPDATE report_statement SET add_by_user_id = ?, description = ?, url = ? WHERE id = ?;`;
+    return callQuery(sql, [user_id, description, url, id])
+}
+
 const updateLogin = (param) => {
     const { id } = param
     const sql = `UPDATE user SET user_last_login = ? WHERE user_id = ?;`;
@@ -194,15 +221,32 @@ const setMasterData = async (param) => {
         master_interest_start_rate_3,
         master_interest_date_rate_3)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`
+
+    const sql_log = `INSERT INTO log_master_interest (
+        master_interest_interest_type, 
+        master_interest_start_rate, 
+        master_interest_create_at, 
+        master_interest_create_by, 
+        master_interest_type,
+        master_interest_start_rate_1,
+        master_interest_date_rate_1,
+        master_interest_start_rate_2,
+        master_interest_date_rate_2,
+        master_interest_start_rate_3,
+        master_interest_date_rate_3)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`
     const t = TIME_NOW()
     await callQuery(sql, ['MLR rate', rate_1.mlr, t, user_id, 'mlr', rate_2.mlr, rate_2.date, rate_3.mlr, rate_3.date, rate_4.mlr, rate_4.date])
     await callQuery(sql, ['MOR rate', rate_1.mor, t, user_id, 'mor', rate_2.mor, rate_2.date, rate_3.mor, rate_3.date, rate_4.mor, rate_4.date])
+
+    await callQuery(sql_log, ['MLR', rate_1.mlr, t, user_id, 'mlr', rate_2.mlr, rate_2.date, rate_3.mlr, rate_3.date, rate_4.mlr, rate_4.date])
+    await callQuery(sql_log, ['MOR', rate_1.mor, t, user_id, 'mor', rate_2.mor, rate_2.date, rate_3.mor, rate_3.date, rate_4.mor, rate_4.date])
 }
 
 const setDataMasterData = async (dataImport, user_id) => {
     const sql = `INSERT INTO master_condition 
-    (id, type, car_brand, date_rate_1, date_rate_2,date_rate_3,date_rate_4,date_rate_5,date_rate_6,date_rate_7,date_rate_8,date_rate_9,date_rate_10,date_rate_11,date_rate_12,date_rate_13,create_at,create_by) 
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`
+    (id, type, car_brand, date_rate_1, date_rate_2,date_rate_3,date_rate_4,date_rate_5,date_rate_6,date_rate_7,date_rate_8,date_rate_9,date_rate_10,date_rate_11,date_rate_12,date_rate_13,date_rate_14,date_rate_15,date_rate_16,date_rate_17,date_rate_18,date_rate_19,date_rate_20,date_rate_21,date_rate_22,date_rate_23,date_rate_24,date_rate_25,date_rate_26,date_rate_27,date_rate_28,date_rate_29,date_rate_30,date_rate_31,date_rate_32,date_rate_33,date_rate_34,date_rate_35,create_at,create_by) 
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`
     await callQuery(`DELETE FROM master_condition;`, [])
     for (let index = 0; index < dataImport.length; index++) {
         const element = dataImport[index];
@@ -218,6 +262,26 @@ const setDataMasterData = async (dataImport, user_id) => {
     }
 
 }
+const setDataMasterSpecData = async (dataImport, user_id) => {
+    const sql = `INSERT INTO master_condition_special 
+    (id, type, car_brand, date_rate_1, date_rate_2,date_rate_3,date_rate_4,date_rate_5,date_rate_6,date_rate_7,date_rate_8,date_rate_9,date_rate_10,date_rate_11,date_rate_12,date_rate_13,date_rate_14,date_rate_15,date_rate_16,date_rate_17,date_rate_18,date_rate_19,date_rate_20,date_rate_21,date_rate_22,date_rate_23,date_rate_24,date_rate_25,date_rate_26,date_rate_27,date_rate_28,date_rate_29,date_rate_30,date_rate_31,date_rate_32,date_rate_33,date_rate_34,date_rate_35,create_at,create_by) 
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`
+    await callQuery(`DELETE FROM master_condition_special;`, [])
+    for (let index = 0; index < dataImport.length; index++) {
+        const element = dataImport[index];
+        const id = `${moment().unix()}-${fshp.generateKey(5)}`
+        let itemList = []
+        itemList.push(id)
+        for (const iterator of element) {
+            itemList.push(iterator)
+        }
+        itemList.push(moment().format(format_datetime))
+        itemList.push(user_id)
+        await callQuery(sql, itemList)
+    }
+
+}
+
 const setDataOutStanding = async (dataImport, user_id) => {
     const sql = `INSERT INTO out_standing 
     (out_standing_id, 
@@ -231,9 +295,26 @@ const setDataOutStanding = async (dataImport, user_id) => {
         out_standing_chassis,
         out_standing_engine,
         out_standing_outstanding,
+        type_curtailment_spec,
+        spec_ratetype_1,
+        spec_rate_1,
+        startdate_1,
+        enddate_1,
+        spec_ratetype_2,
+        spec_rate_2,
+        startdate_2,
+        enddate_2,
+        spec_ratetype_3,
+        spec_rate_3,
+        startdate_3,
+        enddate_3,
+        spec_ratetype_4,
+        spec_rate_4,
+        startdate_4,
+        enddate_4,
         out_standing_create_at,
         out_standing_create_by) 
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`
     await callQuery(`DELETE FROM out_standing;`, [])
     for (let index = 0; index < dataImport.length; index++) {
         const element = dataImport[index];
@@ -336,9 +417,25 @@ const setDataDealerCondition = async (dataImport, user_id) => {
         dealer_condition_grace_period,
         dealer_condition_nor_rate_type,
         dealer_condition_nor_rate,
+        startdate_1,
+        enddate_1,
+        nor_ratetype_1,
+        nor_rate_1,
+        startdate_2,
+        enddate_2,
+        nor_ratetype_2,
+        nor_rate_2,
+        startdate_3,
+        enddate_3,
+        nor_ratetype_3,
+        nor_rate_3,
+        startdate_4,
+        enddate_4,
+        nor_ratetype_4,
+        nor_rate_4,
         dealer_condition_create_at,
         dealer_condition_create_by) 
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`
     await callQuery(`DELETE FROM dealer_condition;`, [])
     for (let index = 0; index < dataImport.length; index++) {
         const element = dataImport[index];
@@ -381,6 +478,8 @@ module.exports = {
     getMasterConditionAll,
     getReportByDealer,
     getLoanTypeData,
+    getMasterSpecCondition,
+    getMasterSpecConditionAll,
 
     setDataMasterData,
     setMasterData,
@@ -389,6 +488,7 @@ module.exports = {
     setDataPayment,
     setDataDefault,
     setDataDealerCondition,
+    setDataMasterSpecData,
 
     updateUserSession,
     updateLogin,
@@ -396,5 +496,7 @@ module.exports = {
     updateLogout,
 
     checkUserName,
-    reSetPassword
+    reSetPassword,
+    getReportStatement,
+    updateReportStatement
 };

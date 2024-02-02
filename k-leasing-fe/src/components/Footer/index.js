@@ -10,7 +10,7 @@ export const MainFooter = (props) => {
             <Container className="d-flex h-100 justify-content-end align-items-center" fluid>
                 <Row>
                     <Col>
-                        <span className="copyright ml-auto my-auto mr-2">{"v1.2.43  Powered by 9Steps"}</span>
+                        <span className="copyright ml-auto my-auto mr-2">{"v2.0.11  Powered by 9Steps"}</span>
                     </Col>
                 </Row>
             </Container>

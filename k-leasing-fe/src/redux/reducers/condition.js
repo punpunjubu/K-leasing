@@ -8,6 +8,11 @@ const initalState = {
         pending: false,
         error: {},
     },
+    masterSpecInterest: {
+        data: undefined,
+        pending: false,
+        error: {},
+    },
     dealerCondition: {
         data: undefined,
         pending: false,
@@ -33,8 +38,13 @@ const initalState = {
         pending: false,
         error: {},
     },
-    dueDate: moment().add(1,'month').startOf('month').add(9, 'days'),
-    date: moment().add(1,'month').startOf('month')
+    reportStatement: {
+        data: undefined,
+        pending: false,
+        error: {},
+    },
+    dueDate: moment().add(1, 'month').startOf('month').add(9, 'days'),
+    date: moment().add(1, 'month').startOf('month')
 };
 const condition = (state = initalState, action = {}) => {
     switch (action.type) {
@@ -57,6 +67,30 @@ const condition = (state = initalState, action = {}) => {
         case types.MASTER_DATA_ERROR:
             return update(state, {
                 masterInterest: {
+                    error: { $set: action.error },
+                    pending: { $set: false },
+                },
+            });
+
+        case types.MASTER_SPEC_DATA_SUCCESS:
+            const { result: { data: dataMasterSpec } } = action
+            return update(state, {
+                masterSpecInterest: {
+                    data: { $set: dataMasterSpec },
+                    pending: { $set: false },
+                    error: { $set: {} },
+                },
+            });
+        case types.MASTER_SPEC_DATA_PENDING:
+            return update(state, {
+                masterSpecInterest: {
+                    pending: { $set: true },
+                    error: { $set: {} },
+                },
+            });
+        case types.MASTER_SPEC_DATA_ERROR:
+            return update(state, {
+                masterSpecInterest: {
                     error: { $set: action.error },
                     pending: { $set: false },
                 },
@@ -187,6 +221,31 @@ const condition = (state = initalState, action = {}) => {
             return update(state, {
                 date: { $set: action.value }
             });
+
+        case types.REPORT_STATEMENT_DATA_SUCCESS:
+            const { result: { data: dataReportStatement} } = action
+            return update(state, {
+                reportStatement: {
+                    data: { $set: dataReportStatement },
+                    pending: { $set: false },
+                    error: { $set: {} },
+                },
+            });
+        case types.REPORT_STATEMENT_DATA_PENDING:
+            return update(state, {
+                reportStatement: {
+                    pending: { $set: true },
+                    error: { $set: {} },
+                },
+            });
+        case types.REPORT_STATEMENT_DATA_ERROR:
+            return update(state, {
+                reportStatement: {
+                    error: { $set: action.error },
+                    pending: { $set: false },
+                },
+            });
+
         default:
             return state;
     }

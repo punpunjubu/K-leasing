@@ -22,6 +22,7 @@ import _sumBy from 'lodash/sumBy'
 import _filter from 'lodash/filter'
 import _cloneDeep from 'lodash/cloneDeep'
 import _isNull from 'lodash/isNull'
+import _ from 'lodash'
 
 const CountDate = (now, old, type) => {
     return type.length ? now.diff(old, 'day') + 1 : now.diff(old, 'day')
@@ -46,6 +47,7 @@ export const YieldReport = (props) => {
         statusFile: { data: statusData } } = props
 
     const [dateActive, setDateActive] = useState(moment().format('YYYY/MM'))
+    // const [dateActive, setDateActive] = useState('2022/11')
     const [downloadItem, setDownloadItem] = useState(null)
 
     useEffect(() => {
@@ -54,7 +56,7 @@ export const YieldReport = (props) => {
         }
     }, [statusData])
 
-    const groupData = (data, forNormal = false) => {
+    const groupData = (data, forNormal = false, formatToFixed) => {
         let {
             dealerCode,
             franchise,
@@ -89,7 +91,12 @@ export const YieldReport = (props) => {
             defaultSOTRate = ''
             defaultAGINGRate = ''
         }
-
+   
+        const spRate = _.split(parseFloat(parseFloat(rate).toFixed(6)), '.')
+        let toFixed = 2
+        if (spRate.length === 2) {
+            toFixed = formatToFixed
+        }
         return {
             dealerCode,
             franchise,
@@ -100,7 +107,7 @@ export const YieldReport = (props) => {
             midNo,
             chassis,
             outstanding: formatAmount(outstanding),
-            normalRate: formatAmount(normalRate) || '',
+            normalRate: formatAmount(normalRate,toFixed) || '',
             defaultSOTRate: formatAmount(defaultSOTRate) || '',
             defaultAGINGRate: formatAmount(defaultAGINGRate) || '',
             aging,
@@ -113,14 +120,14 @@ export const YieldReport = (props) => {
 
     useEffect(() => {
         if (!_isUndefined(reportData) && !_isUndefined(reportData.data) && !_isUndefined(reportData.master_condition)) {
-            const { data, date, master_condition } = reportData
+            const { data, date, master_condition, master_condition_spec } = reportData
 
             let item = []
             data.map((resDealer, index) => {
                 const { out_standing, default_file, payment } = resDealer
                 if (!_isUndefined(out_standing[0])) {
                     const dealer = _find(dealerData, (e) => e.dealer_condition_dealer_code === out_standing[0].out_standing_dealer_code)
-                    const masterCondition = _find(master_condition, (e) => e.type === Number(dealer.dealer_condition_type_curtailment))
+                    let masterCondition = _find(master_condition, (e) => e.type === Number(dealer.dealer_condition_type_curtailment))
                     let normalRate = _find(mor_mlr, (e) => e.master_interest_type === dealer.dealer_condition_nor_rate_type.toLocaleLowerCase()).master_interest_start_rate
                     const loan = _find(loanTypeData, (e) => e.loan_type_by === 'loan')
                     const inventory = _find(loanTypeData, (e) => e.loan_type_by === 'inventory')
@@ -129,6 +136,44 @@ export const YieldReport = (props) => {
                     const defaultWithHolding = loanType ? loan.loan_type_tax : inventory.loan_type_tax
                     const findNormalRate = _find(mor_mlr, (e) => e.master_interest_type === dealer.dealer_condition_nor_rate_type.toLocaleLowerCase())
                     let nRate = []
+
+                    let formatToFixed = 2
+                    for (let index = 0; index < 2; index++) {
+                        if (!_isUndefined(mor_mlr[index]) && mor_mlr[index]) {
+                            for (let index2 = 0; index2 < 4; index2++) {
+                                if (index2 === 0) {
+                                    const rate = _.split(parseFloat(mor_mlr[index].master_interest_start_rate), '.')
+                                    let toFixed = 2
+                                    if (rate.length === 2) {
+                                        if (rate[1].length > 6) {
+                                            toFixed = 6
+                                        } else {
+                                            toFixed = rate[1].length
+                                        }
+                                    }
+                                    if (formatToFixed < toFixed) {
+                                        formatToFixed = toFixed
+                                    }
+                                } else {
+                                    if (!_isUndefined(mor_mlr[index][`master_interest_start_rate_${index2}`]) && !_isNull(mor_mlr[index][`master_interest_start_rate_${index2}`]) && mor_mlr[index][`master_interest_start_rate_${index2}`]) {
+                                        const rate = _.split(parseFloat(mor_mlr[index][`master_interest_start_rate_${index2}`]), '.')
+                                        let toFixed = 2
+                                        if (rate.length === 2) {
+                                            if (rate[1].length > 6) {
+                                                toFixed = 6
+                                            } else {
+                                                toFixed = rate[1].length
+                                            }
+                                        }
+                                        if (formatToFixed < toFixed) {
+                                            formatToFixed = toFixed
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
                     for (let index = 0; index < 4; index++) {
                         if (index === 0) {
                             nRate.push({
@@ -141,11 +186,17 @@ export const YieldReport = (props) => {
                             && !_isNull(findNormalRate[`master_interest_date_rate_${index}`])
                             && findNormalRate[`master_interest_start_rate_${index}`]
                             && findNormalRate[`master_interest_date_rate_${index}`]) {
-                            const rate = findNormalRate[`master_interest_start_rate_${index}`]
-                            nRate.push({
-                                rate: Number(rate) + Number(dealer.dealer_condition_nor_rate),
-                                date: DateFormat(findNormalRate[`master_interest_date_rate_${index}`])
-                            })
+                                
+                                const rate = findNormalRate[`master_interest_start_rate_${index}`]
+
+                                let dealer_condition_nor_rate = Number(dealer.dealer_condition_nor_rate)
+                                if(dealer.startdate_1 && dealer.enddate_2 && dealer.nor_rate_1 && dealer.nor_ratetype_1){
+                                    dealer_condition_nor_rate = 0
+                                }
+                                nRate.push({
+                                    rate: Number(rate) + dealer_condition_nor_rate,
+                                    date: DateFormat(findNormalRate[`master_interest_date_rate_${index}`])
+                                })
                         }
                     }
 
@@ -160,6 +211,40 @@ export const YieldReport = (props) => {
                         }
                        
                     }
+                    if(dealer.startdate_1 && dealer.enddate_1 && dealer.nor_rate_1 && dealer.nor_ratetype_1){
+                        let newNRate = []
+                        const countNRate = (nRate.length - 1)
+                        const dateText = nRate[countNRate].date.format('YYYY/MM/')
+                        const rate = nRate[0].rate
+                     
+                            newNRate.push({
+                                rate:  rate + Number(dealer.nor_rate_1),
+                                date:  nRate[0].date,
+                                endDate: DateFormat(`${dateText}${dealer.enddate_1}`)
+                            })
+                        if(dealer.startdate_2 && dealer.enddate_2 && dealer.nor_rate_2){
+                            newNRate.push({
+                                rate:  rate + Number(dealer.nor_rate_2),
+                                date:  DateFormat(`${dateText}${dealer.startdate_2}`),
+                                endDate: DateFormat(`${dateText}${dealer.enddate_2}`)
+                            })
+                        }
+                        if(dealer.startdate_3 && dealer.enddate_3 && dealer.nor_rate_3){
+                            newNRate.push({
+                                rate:  rate + Number(dealer.nor_rate_3),
+                                date:  DateFormat(`${dateText}${dealer.startdate_3}`),
+                                endDate: DateFormat(`${dateText}${dealer.enddate_3}`)
+                            })
+                        }
+                        if(dealer.startdate_4 && dealer.enddate_4 && dealer.nor_rate_4){
+                            newNRate.push({
+                                rate:  rate + Number(dealer.nor_rate_4),
+                                date:  DateFormat(`${dateText}${dealer.startdate_4}`),
+                                endDate: DateFormat(`${dateText}${dealer.enddate_4}`)
+                            })
+                        }
+                        nRate = newNRate
+                    }
                     out_standing.map((res, index) => {
                         const midno           = res.out_standing_midno
                         const outstanding     = res.out_standing_outstanding
@@ -168,6 +253,12 @@ export const YieldReport = (props) => {
                         const defaultPay      = default_file.length && _filter(default_file, (e) => e.default_mid === res.out_standing_midno) || ''
                         const paymentPay      = payment.length && _find(payment, (e) => e.payment_mid === res.out_standing_midno) || ''
                         const franchise       = res.out_standing_franchise
+
+                        let masterConditionSpec =  ''
+                        if(master_condition_spec && !_.isUndefined(master_condition_spec) && !_.isNull(master_condition_spec) && master_condition_spec.length && res.type_curtailment_spec){
+                            masterConditionSpec = _find(master_condition_spec, (e) => e.type === Number(res.type_curtailment_spec))
+                            masterCondition = masterConditionSpec
+                        }
 
                         let param = {
                             dealerCode      : dealer.dealer_condition_dealer_code,
@@ -192,8 +283,8 @@ export const YieldReport = (props) => {
 
                         let endDate = DateFormat(date).endOf('month')
                         const defaultMonth = DateFormat(date).month()
-                        if (midno !== '' && dealer.dealer_condition_dealer_code !== '') {
-                            // console.log('midno=============>', midno,'<===================midno')
+               
+                        if (midno == '042673' && dealer.dealer_condition_dealer_code !== '') {
                             let groupPaydate = []
                             if (paymentPay) {
                                 param.outstanding = outstanding
@@ -267,7 +358,7 @@ export const YieldReport = (props) => {
                                   
                                         lastDate = _cloneDeep(paydate)
                                         let calculateByFranchise = true
-                                
+                                       
                                         if (interestCalDate) {
                                             const monthInterestCalLoop = DateFormat(interestCalDate)
 
@@ -307,28 +398,31 @@ export const YieldReport = (props) => {
                                         } else {
 
                                             if (monthInvoicLoop.year() === paydate.year() && monthInvoicLoop.month() === paydate.month()) {
+                                               
                                                 if (Number(endDate.format('D')) > Number(paydate.format('D'))) {
                                                     dayLoop = CountDate(paydate, startDate, [])
                                                 } else {
+                                                   
                                                     dayLoop = CountDate(paydate, monthInvoicLoop, [])
                                                     _startDate = monthInvoicLoop
+                                                    if(i > 0 && groupPaydate.length > 1 && Number(startDate.format('YYYYMMDD')) >= Number(monthInvoicLoop.format('YYYYMMDD'))){
+                                                        dayLoop = CountDate(paydate, startDate, [])
+                                                        _startDate = startDate
+                                                    }
 
                                                 }
-                                               
+
                                             } else {
-                                              
                                                 if (Number(endDate.format('D')) > Number(paydate.format('D'))) {
                                                     dayLoop = CountDate(paydate, startDate, [])
-                                                    if(Number(startDate.format('D')) === Number(paydate.format('D'))){
+                                                    if(Number(startDate.format('D')) === Number(paydate.format('D')) && paydate.format('DD') != '01'){
                                                         dayLoop = CountDate(paydate, startDate, [true])
                                                     }
                                                 } else {
                                                     dayLoop = CountDate(endDate, startDate, [])
-                                                    
                                                     if (nRate.length > 1) {
                                                         if(defaultPay.length){
                                                             dayLoop = CountDate(endDate, startDate, [true])
-                                                           
                                                         }else if(endDate.format('DDMMYYYY') < paydate.format('DDMMYYYY')){
                                                             dayLoop = CountDate(endDate, startDate, [true])
                                                         }else{
@@ -336,23 +430,22 @@ export const YieldReport = (props) => {
                                                         }
                                                     }
                                                 }
-                                                
+
                                             }
                                             if(CountDate(paydate, monthInvoicLoop, []) === 0){
                                                 if(franchise === 'SUZUKI NEW' || franchise === 'SUZUKINEW' || franchise === 'suzuki new'){
                                                     calculateByFranchise = false
                                                 }
-                                                
                                             }
                                         }
 
                                         if (defaultPay.length && dayLoop !== 0) {
-                                            day += 1
-                                            dayLoop += 1
+                                            day = day + 1
+                                            dayLoop = dayLoop + 1
                                             if(nRate.length > 1){
                                                 if(dayLoop > CountDate(_cloneDeep(endDate), startDate, [true])){
-                                                    day -= 1
-                                                    dayLoop -= 1
+                                                    day = day - 1
+                                                    dayLoop = dayLoop - 1
                                                 }else if(Number(endDate.format('D')) > Number(paydate.format('D')) && Number(startDate.format('D')) === Number(paydate.format('D'))){
                                                     if((day - 1) >  lastDay){
                                                         day -= 1
@@ -361,7 +454,7 @@ export const YieldReport = (props) => {
                                                 }
                                             }
                                         }
-                                
+
                                         if (paydate.format('YYYY-MM-DD') === startDate.format('YYYY-MM-DD') && dayLoop === 0) {
                                             if (paydate.format('DD') !== '01' && paydate.format('DD') !== startDate.format('DD') || defaultPay.length) {
                                                 let amount = 0
@@ -395,11 +488,12 @@ export const YieldReport = (props) => {
                                               param.aging     = day
                                               param.payDate   = paydate.format("DD-MM-YYYY")
                                               param.payAmount = groupPaydate[i].amount
-                                     
-                                              console.log('L', dayLoop,'รอบ MRL',index,'รอบ',i, 'day',day, 'lastDay', lastDay)
-                                              
-                                        if (dayLoop > 0 && day != lastDay) {
+                                          
+                                              console.log('L', dayLoop,'รอบ MRL',index,'รอบ',i)
 
+
+                                        if (dayLoop > 0 && day != lastDay) {
+                                       
                                             if (rateRes.type === 'nomal') {
                                                 let startDateRentalDay = _cloneDeep(startDate)
                             
@@ -411,7 +505,6 @@ export const YieldReport = (props) => {
                                                 }else{
                                                     setLastDateEnd = _cloneDeep(paydate).subtract(1,'day')
                                                 }
-                                                
                                                 let dayCount = day
                                                 let ckStartDateRentalDay = false
                                                 if (!_isUndefined(groupPaydate[i - 1]) && groupPaydate[i - 1].amount !== outstanding) {
@@ -420,13 +513,14 @@ export const YieldReport = (props) => {
                                                         amount += Number(groupPaydate[iAmount].amount)
                                                     }
                                                     param.outstanding = outstanding - amount
+                                                   
                                                     if (interestCalDate) {
                                                         const monthInterestCalLoop = DateFormat(interestCalDate)
                                                         const oldDateNomal = DateFormat(groupPaydate[i - 1].paydate)
                                                         if(monthInterestCalLoop > oldDateNomal){
                                                             param.startDate = monthInterestCalLoop.format("DD-MM-YYYY")
                                                             startDateRentalDay = monthInterestCalLoop
-                                                            dayLoop = CountDate(paydate, monthInterestCalLoop, [true])
+                                                            dayLoop = CountDate(paydate, monthInterestCalLoop, defaultPay.length > 0 ? [true] : [])
                                                       
                                                         }else{
                                                             param.startDate = DateFormat(_cloneDeep(oldDateNomal)).add(defaultPay.length > 0 ? 1 : 0, 'days').format("DD-MM-YYYY")
@@ -435,9 +529,11 @@ export const YieldReport = (props) => {
                                                         }
                                                     }else{
                                                         const checkStartDate = DateFormat(_cloneDeep(groupPaydate[i - 1].paydate)).add(defaultPay.length > 0 ? 1 : 0, 'days')
+                                                       
                                                         if(checkStartDate.format("DD-MM-YYYY") > param.endDate){
                                                             dayLoop = 0
                                                         }else{
+                                                          
                                                             if(_cloneDeep(startDate).format('DD-MM-YYYY') < DateFormat(groupPaydate[i - 1].paydate).format('DD-MM-YYYY')){
                                                                 param.startDate = checkStartDate.format("DD-MM-YYYY")
                                                                 startDateRentalDay = checkStartDate
@@ -458,6 +554,7 @@ export const YieldReport = (props) => {
                                                     }
                                                     if ((index + 1) === nRate.length) {
                                                         dayCount = CountDate(_cloneDeep(endDateRentalDay).subtract(defaultPay.length ? 0 : 1, 'days'), monthInvoicLoop, [true])
+                                                       
                                                         if(dayLoop + lastDay > day){
                                                             const x = (dayLoop + lastDay) - day
                                                             // param.startDate = _cloneDeep(_endDate).subtract((dayLoop - x)-1, 'days').format("DD-MM-YYYY")
@@ -495,7 +592,6 @@ export const YieldReport = (props) => {
                                                     if (_cloneDeep(_endDate).subtract(defaultPay.length ? 0 : 1, 'days').format('MM') !== _startDate.format('MM')) {
                                                         param.endDate = param.startDate
                                                     }
-                                                    // console.log('dayLoop', dayLoop, endDate.format('YYYY/MM/DD') == DateFormat(endDate).endOf('month').format('YYYY/MM/DD') && paydate.format('YYYY/MM/DD') == endDate.format('YYYY/MM/DD'))
                                                     if(dayLoop > 0 && defaultPay.length){
                                                         if(endDate.format('YYYY/MM/DD') == DateFormat(endDate).endOf('month').format('YYYY/MM/DD') && paydate.format('YYYY/MM/DD') == endDate.format('YYYY/MM/DD')){
                                                             const sumAmount = _sumBy(groupPaydate, function (o) { return Number(o.amount); })
@@ -507,20 +603,19 @@ export const YieldReport = (props) => {
                                                         }
             
                                                     }
-                                                   
                                                     param.normalRate = rateRes.value
                                                     param.rentalDay = dayLoop
                                                     param.aging     = dayCount
                                                     if (param.rentalDay > 0) {
                                                         lastDateEnd = setLastDateEnd
-                                                       
-                                                        item.push(groupData(param))
+                                                        item.push(groupData(param,false,formatToFixed))
                                                     }else{
                                                         day = lastDay
                                                     }
                                                 }else{
                                                     if (_cloneDeep(_endDate).subtract(defaultPay.length ? 0 : 1, 'days').format('MM') !== _startDate.format('MM')) {
                                                         param.endDate = param.startDate
+                                                        dayLoop = 1
                                                     }
                                                    
                                                     param.normalRate = rateRes.value
@@ -528,7 +623,7 @@ export const YieldReport = (props) => {
                                                     param.aging     = dayCount
                                                     if (param.rentalDay > 0) {
                                                         lastDateEnd = setLastDateEnd
-                                                        item.push(groupData(param))
+                                                        item.push(groupData(param,false,formatToFixed))
                                                     }else{
                                                         day = lastDay
                                                     }
@@ -563,7 +658,7 @@ export const YieldReport = (props) => {
                                                 let oldDate = CountDate(totalDataInvoice, startDate, [])
                                                 let newPaydate = CountDate(paydate, totalDataInvoice,  defaultPay)
                                                 let setLastDateEnd = totalDataInvoice
-                                            // console.log('startDate', startDate.format('YYYY/MM/DD'), totalDataInvoice.format('YYYY/MM/DD'), paydate.format('YYYY/MM/DD'))
+                                            
                                                     if(newPaydate > 0){
                                                         if(defaultPay.length){
                                                             setLastDateEnd = paydate
@@ -585,36 +680,47 @@ export const YieldReport = (props) => {
                                                         }
                                                     }
                              
+                                                    //new
+                                                    // if(Number(paydate.format('YYYYMMDD')) > Number(_endDate.format('YYYYMMDD'))){
+                                                    //     if(Number(startDate.format('YYYYMMDD')) > Number(totalDataInvoice.format('YYYYMMDD'))){
+                                                    //         newPaydate = CountDate(_endDate, startDate, [true])
+                                                    //     }else{
+                                                    //         newPaydate = CountDate(_endDate, totalDataInvoice, [true])
+                                                    //     }
+                                                    //     setLastDateEnd = _endDate
+                                                    // }
+                                                    // console.log('oldDate',oldDate,'newPaydate', newPaydate)
+                                                
+                                     
                                                 if (dateLoopCount !== 0  && dateLoopCount > 0) {
                                                     const dayTotalCal = dayLoop - dateLoopCount
-                                                    if(dayTotalCal > 0){
+                                                    if (dayTotalCal > 0 && groupPaydate.length == 1) {
                                                         oldDate = CountDate(totalDataInvoice, DateFormat(groupPaydate[i - 1].paydate), [])
                                                         _oldStartDate = DateFormat(groupPaydate[i - 1].paydate)
-                                                        if(nRate.length > 1){
-                                                            if(index > 0){
-                                                                oldDate = CountDate(totalDataInvoice, _cloneDeep(DateFormat(groupPaydate[i - 1].paydate)).add(1,'day'), [])
+                                                        if (nRate.length > 1) {
+                                                            if (index > 0) {
+                                                                oldDate = CountDate(totalDataInvoice, _cloneDeep(DateFormat(groupPaydate[i - 1].paydate)).add(1, 'day'), [])
                                                                 // _oldStartDate = DateFormat(groupPaydate[i - 1].paydate).add(1,'day')
                                                             }
                                                         }
-                                                    
                                                         if (oldDate > 0) {
                                                             newPaydate = dayTotalCal - oldDate
                                                         } else {
                                                             newPaydate = dayTotalCal
                                                         }
                                                     }
-                                                
                                                 }else  if (dateLoopCount !== 0 && dateLoopCount < 0) {
                                                     if(nRate.length > 1){
-                                                        if(index > 0 && groupPaydate.length > 1 && index != (nRate.length - 1)){
-                                                            oldDate = CountDate(totalDataInvoice, _cloneDeep(DateFormat(groupPaydate[i - 1].paydate)).add(1,'day'), [])
-                                                            console.log('2')
+                                                        const inPaydate = _cloneDeep(DateFormat(groupPaydate[i - 1].paydate)).add(1,'day')
+                                                        if(index > 0 && groupPaydate.length > 1 && index != (nRate.length - 1) && Number(startDate.format('YYYYMMDD')) < Number(inPaydate.format('YYYYMMDD'))){
+                                                            oldDate = CountDate(totalDataInvoice, inPaydate, [])
+                                                           
                                                         }
                                                     }
                                                 } else if (dateLoopCount === 0) {
-                                            
+                                          
                                                     if (oldDate > 0 && nRate.length === 1) {
-                                                        console.log('3')
+                                                   
                                                         if (!listTypeDay.includes(countDate) && Number(totalDataInvoice.format('D')) !== Number(paydate.format('D'))) {
                                                             oldDate = Number(totalDataInvoice.format('D'))
                                                             newPaydate = Number(paydate.format('D')) - oldDate - 1
@@ -622,14 +728,15 @@ export const YieldReport = (props) => {
                                                                 newPaydate = Number(paydate.format('D')) - oldDate
                                                             }
                                                         }else if(listTypeDay.includes(countDate) && oldDate != (Number(totalDataInvoice.format('D')) - Number(startDate.format('D')) + 1)){
-                                                            oldDate = Number(totalDataInvoice.format('D'))
-                                                            newPaydate = Number(paydate.format('D')) - oldDate - 1
-                                                            if (defaultPay.length) {
-                                                                newPaydate = Number(paydate.format('D')) - oldDate
+                                                            if(countDate >= CountDate(totalDataInvoice,monthInvoicLoop,[true])){
+                                                                oldDate = Number(totalDataInvoice.format('D'))
+                                                                newPaydate = Number(paydate.format('D')) - oldDate - 1
+                                                                if (defaultPay.length) {
+                                                                    newPaydate = Number(paydate.format('D')) - oldDate
+                                                                }
                                                             }
                                                         }
                                                     }else if(nRate.length > 1){
-                                                        console.log('4')
                                                         const d = defaultPay.length ? 1 : 0
                                                         if(listTypeDay.includes(countDate) && oldDate >= 0 && oldDate != (Number(totalDataInvoice.format('D')) - Number(startDate.format('D')) + d)){
                                                          
@@ -659,19 +766,24 @@ export const YieldReport = (props) => {
                                                               
                                                             }
                                                         }else if(listTypeDay.includes(countDate) && oldDate < 0){
-                                                            if(element.date <= startDate && element.endDate >= startDate){
-                                                                newPaydate = CountDate(paydate, startDate, defaultPay)
+                                                            if(Number(element.date.format('YYYYMMDD')) <= Number(startDate.format('YYYYMMDD')) && Number(element.endDate.format('YYYYMMDD')) >= Number(startDate.format('YYYYMMDD'))){
+                                                                console.log('2')
+                                                                if(Number(element.endDate.format('YYYYMMDD')) >= Number(paydate.format('YYYYMMDD'))){
+                                                                    newPaydate = CountDate(paydate, startDate, defaultPay)
+                                                                }
                                                             }
+                                                            // if(element.date < startDate && element.endDate >= startDate){
+                                                            //     newPaydate = CountDate(paydate, startDate, defaultPay)
+                                                            // }
                                                         }else if(index > 0 && listTypeDay.includes(countDate) && index != (nRate.length - 1)  && startDate.format('YYYY/MM/DD') != totalDataInvoice.format('YYYY/MM/DD') && totalDataInvoice.format('YYYY/MM/DD') > paydate.format('YYYY/MM/DD')){
                                                             oldDate = CountDate(totalDataInvoice, startDate, [true])
                                                             newPaydate = CountDate(paydate, _cloneDeep(totalDataInvoice.add(1,'day')), defaultPay)
                                                         }
                                                     }
                                                 }
-                                              
                                                 // console.log('oldDate', oldDate,'newPaydate',newPaydate,'day',day)
                                                 if (rateRes.type !== 9999 && totalDataInvoice.month() === DateFormat(date).month()) {
-                                                   
+                                                    console.log('first 1')
 
                                                     if (!_isUndefined(groupPaydate[i - 1]) && groupPaydate[i - 1].amount !== outstanding) {
                                                         let amount = 0
@@ -682,7 +794,6 @@ export const YieldReport = (props) => {
                                                     }
                                               
                                                     if (newPaydate > 0 && defaultPay.length) {
-                                                       
                                                         if (endDate.format('YYYY/MM/DD') == DateFormat(endDate).endOf('month').format('YYYY/MM/DD') && paydate.format('YYYY/MM/DD') == endDate.format('YYYY/MM/DD')) {
                                                             const sumAmount = _sumBy(groupPaydate, function (o) { return Number(o.amount); })
                                                             const cal = Number(outstanding) - sumAmount
@@ -692,7 +803,6 @@ export const YieldReport = (props) => {
                                                         }
 
                                                     }
-                                               
                                                     // console.log('oldDate', oldDate)
                                                     if (oldDate > 0) {
                                                         let lastEndDate = ''
@@ -762,8 +872,12 @@ export const YieldReport = (props) => {
                                                                let day3 = day
                                                                 if(param.endDate != _endDate.format("DD-MM-YYYY")){
                                                                     day3 = CountDate(_cloneDeep(lastEndDate).add(newPaydate, 'days'), monthInvoicLoop, [true])
-                                                           
+                                                                //    console.log('setDay3', setDay3)
+                                                                //     if(day >= setDay3){
+                                                                //         day3 = setDay3
+                                                                //     }
                                                                 }
+                                                            //  console.log('day', lastEndDate.format("DD-MM-YYYY"))
                                                                 param.normalRate = rateRes.value
                                                                 param.rentalDay = newPaydate
                                                                 param.aging = day3
@@ -772,22 +886,22 @@ export const YieldReport = (props) => {
                                                             if (param.rentalDay > 0) {
                                                                 // console.log('param', _cloneDeep(param))
                                                                 lastDateEnd = setLastDateEnd
-                                                                item.push(groupData(param))
+                                                                item.push(groupData(param,false,formatToFixed))
                                                             }
                                                         }
                                                     } else {
                                                         console.log('first 2')
-                                                
                                                         if (!_isUndefined(groupPaydate[i - 1])) {
 
                                                             let numStartDate = newPaydate
+                                                     
                                                             let numEndDate = 1
                                                             if(defaultPay.length){
                                                                  numStartDate = newPaydate - 1
                                                                  numEndDate = 0
                                                             }
                                                             let dayCount = CountDate(endDate, monthInvoicLoop, [true])
-                                              
+                                                            
                                                             if(CountDate(endDate, startDate, [true]) != newPaydate){
                                                                 // param.startDate = DateFormat(groupPaydate[i].paydate).subtract(numStartDate, 'days').format("DD-MM-YYYY")
                                                                 // param.endDate = DateFormat(groupPaydate[i].paydate).subtract(numEndDate, 'days').format("DD-MM-YYYY")
@@ -802,7 +916,7 @@ export const YieldReport = (props) => {
                                                             if (param.rentalDay > 0) {
                                                                  lastDateEnd = setLastDateEnd
                                                                 //  console.log('param', _cloneDeep(param))
-                                                                item.push(groupData(param))
+                                                                item.push(groupData(param,false,formatToFixed))
                                                             }
                                                         } else {
 
@@ -815,14 +929,14 @@ export const YieldReport = (props) => {
                                                                 param.endDate   = subPaydate.format("DD-MM-YYYY")
                                                                let dayCount = day
                                                                dayCount = CountDate(subPaydate, monthInvoicLoop, [true])
-                                                               
+                                                              
                                                             if(defaultPay.length){
                                                                 if(newPaydate > CountDate(subPaydate, _oldStartDate, [])){
                                                                     param.endDate   = _cloneDeep(_oldStartDate).add(newPaydate-1,'days').format("DD-MM-YYYY")
                                                                     dayCount = CountDate(_cloneDeep(_oldStartDate).add(newPaydate-1,'days'), monthInvoicLoop, [true])
                                                                 }
                                                             }
-                                                          
+                                                 
                                                             if (defaultPay.length && DateFormat(subPaydate).unix() <= DateFormat(_oldStartDate).unix()) {
                                                                 if(subPaydate.format('DD') !== '01'){
                                                                     param.endDate = param.startDate
@@ -841,18 +955,19 @@ export const YieldReport = (props) => {
                                                                     dayCount = CountDate( _cloneDeep(_oldStartDate).add(newPaydate-1,'days'), monthInvoicLoop, [true])
                                                                 }
                                                             }
-                                                    
+                                                     
                                                             param.normalRate = rateRes.value
                                                             param.rentalDay = newPaydate
                                                             param.aging = dayCount
                                                             if (param.rentalDay > 0) {
                                                                  lastDateEnd = setLastDateEnd
                                                                 //  console.log('param', _cloneDeep(param))
-                                                                item.push(groupData(param))
+                                                                item.push(groupData(param,false,formatToFixed))
                                                             }
                                                         }
                                                     }
                                                 } else {
+                                                    console.log('first 2')
                                                     param.startDate = _startDate.format("DD-MM-YYYY")
                                                     param.endDate = _cloneDeep(_endDate).subtract(defaultPay.length ? 0 : 1, 'days').format("DD-MM-YYYY")
                                             
@@ -867,9 +982,9 @@ export const YieldReport = (props) => {
                                                         if (defaultPay.length) {
                                                             param.startDate = DateFormat(_cloneDeep(groupPaydate[i - 1].paydate)).add(1, 'day').format("DD-MM-YYYY")
                                                         }
-                                                        param.endDate = DateFormat(groupPaydate[i - 1].paydate).add((dayLoop) - (defaultPay.length ? 0 : 1), 'days').format("DD-MM-YYYY")
                                                         if(nRate.length > 1){
-                                                             param.endDate = DateFormat(groupPaydate[i - 1].paydate).add((dayLoop - dateLoopCount) - (defaultPay.length ? 0 : 1), 'days').format("DD-MM-YYYY")
+                                                            param.endDate = DateFormat(groupPaydate[i - 1].paydate).add((dayLoop - dateLoopCount) - (defaultPay.length ? 0 : 1), 'days').format("DD-MM-YYYY")
+                                                            
                                                             if(lastDay + dayLoop >= day){
                                                                 const x = (dayLoop + lastDay) - day
                                                                 dayLoop = dayLoop - x
@@ -881,9 +996,9 @@ export const YieldReport = (props) => {
                                                         param.endDate = param.startDate
                                                     }
                                                     
-                                                    
                                                     param.normalRate = rateRes.value
-                                                   param.rentalDay = dayLoop
+                                                    param.rentalDay = dayLoop
+                                                    // param.rentalDay = dateLoopCount > 0 ? dayLoop - dateLoopCount : dayLoop
                                                     if(nRate.length > 1){
                                                         param.rentalDay = dateLoopCount > 0 ? dayLoop - dateLoopCount : dayLoop
                                                     }
@@ -915,10 +1030,10 @@ export const YieldReport = (props) => {
                                                         }
                                                         
                                                     }
-                                                   
+                                           
                                                     if (param.rentalDay > 0) {
                                                         lastDateEnd = setLastDateEnd
-                                                        item.push(groupData(param))
+                                                        item.push(groupData(param,false,formatToFixed))
                                                     }else{
                                                          day = lastDay
                                                     }
@@ -985,6 +1100,7 @@ export const YieldReport = (props) => {
                     
                                     let checkRateRes = CountRate(dayRate - day, masterCondition, normalRate)
                                     let rateRes = CountRate(dayRate, masterCondition, normalRate)
+                                    // console.log("🚀 ~ file: YieldReport.js:1089 ~ out_standing.map ~ rateRes:", rateRes)
                                     // console.log('lastDay1', lastDay)
                                    
                                     if(day > 0){
@@ -1012,7 +1128,7 @@ export const YieldReport = (props) => {
                                                             param.aging = lastDay + dayNomal
                                                             lastDay = lastDay + dayNomal
                                                             if (param.rentalDay > 0) {
-                                                                item.push(groupData(param))
+                                                                item.push(groupData(param,false,formatToFixed))
                                                             }
                                                         } else {
                                                             let countDate = rateRes.type - 30
@@ -1028,7 +1144,7 @@ export const YieldReport = (props) => {
                                                                     param.normalRate = rateRes.value
                                                                     param.rentalDay = oldDate
                                                                     if (param.rentalDay > 0) {
-                                                                        item.push(groupData(param))
+                                                                        item.push(groupData(param,false,formatToFixed))
                                                                     }
                                                                 } else {
                                                                     totalDate = _cloneDeep(DateFormat(invoiceDate)).add(359, 'days')
@@ -1038,7 +1154,7 @@ export const YieldReport = (props) => {
                                                                     param.normalRate = rateRes.oldValue
                                                                     param.rentalDay = oldDate
                                                                     if (param.rentalDay > 0) {
-                                                                        item.push(groupData(param))
+                                                                        item.push(groupData(param,false,formatToFixed))
                                                                     }
                                                                 }
                                                             } else {
@@ -1049,11 +1165,18 @@ export const YieldReport = (props) => {
                                                                 let totalDataInvoice = _cloneDeep(DateFormat(invoiceDate)).add(countDate, 'days')
                                                                 if(totalDataInvoice.format('YYYY/MM/DD') > element.endDate.format('YYYY/MM/DD')){
                                                                     totalDataInvoice =  element.endDate
+                                                                }else if( Number(element.date.format('DDMMYYYY')) > Number(addLastDate.format('DDMMYYYY'))){
+                                                                    addLastDate = element.date
+                                                                    param.startDate = addLastDate.format("DD-MM-YYYY")
                                                                 }
+                                                                // let oldDate = CountDate(totalDataInvoice, sDate.add(dateLoopCount, 'days'), [])
+                                                                // if(groupPaydate.length){
+                                                                //     totalDataInvoice =  DateFormat(groupPaydate[groupPaydate.length - 1].paydate)
+                                                                // }
+                                                                // console.log('totalDataInvoice', lastDay,totalDataInvoice.format('DD-MM-YYYY'),addLastDate.format('DD-MM-YYYY'),element.endDate.format('DD-MM-YYYY'))
                                                                 let oldDate = CountDate(totalDataInvoice, addLastDate, [])
                                                                 let newPaydate = CountDate(element.endDate, _cloneDeep(totalDataInvoice), [true])
-                                                               
-                                                        // console.log('oldDate', oldDate, 'newPaydate', newPaydate, 'addLastDate', addLastDate.format('DD-MM-YYYY'), 'totalDataInvoice',_cloneDeep(totalDataInvoice).format('DD-MM-YYYY'), 'endDate',element.endDate.format('DD-MM-YYYY'), 'startDate',element.date.format('DD-MM-YYYY'))
+                                                        
                                                                 if(index == 0){
                                                                     if(totalDataInvoice.format('DD-MM-YYYY') >= element.endDate.format('DD-MM-YYYY')){
                                                                     
@@ -1061,18 +1184,15 @@ export const YieldReport = (props) => {
                                                                         newPaydate = 0
                                                                         param.startDate = addLastDate.format("DD-MM-YYYY")
                                                                         param.endDate = element.endDate.format("DD-MM-YYYY")
-                                                                        console.log('first 1')
                                                                     }
                                                                 }else if(index > 0 && addLastDate.format('DD-MM-YYYY') < element.date.format('DD-MM-YYYY') && totalDataInvoice.format('DD-MM-YYYY') <= element.date.format('DD-MM-YYYY')){
                                                                     oldDate = CountDate(totalDataInvoice, element.date, [])
                                                                     newPaydate = CountDate(element.endDate, element.date, [true])
                                                                     param.startDate = addLastDate.format("DD-MM-YYYY")
                                                                     param.endDate = totalDataInvoice.format("DD-MM-YYYY")
-                                                                    console.log('first 2')
                                                                     if((nRate.length - 1) == index){
                                                                         _endDate = endDate
                                                                     }
-                                                          
                                                                     // console.log('first1',index)
                                                                 
                                                                 }else if(index > 0 && totalDataInvoice.format('DD-MM-YYYY') >= element.date.format('DD-MM-YYYY') && totalDataInvoice.format('DD-MM-YYYY') <= element.endDate.format('DD-MM-YYYY') && oldDate <= 0){
@@ -1084,7 +1204,6 @@ export const YieldReport = (props) => {
                                                                         ay1 = []
                                                                         ay2 = [true]
                                                                     }
-                                                                    // console.log('startDate2', startDate2.format('DD-MM-YYYY'))
                                                                     oldDate = CountDate(totalDataInvoice, startDate2, ay1)
                                                                     newPaydate = CountDate(element.endDate, totalDataInvoice, ay2)
                                                                     param.startDate = startDate2.format("DD-MM-YYYY")
@@ -1100,19 +1219,33 @@ export const YieldReport = (props) => {
                                                                         }
                                                                     }
                                                                     if(oldDate <= 0 && newPaydate > 0){
-                                                                        if(addLastDate.format("DD-MM-YYYY") >= totalDataInvoice.format("DD-MM-YYYY")){
-                                                                            newPaydate = CountDate(element.endDate, addLastDate, [true])
-                                                                        }
+                                                                       
+                                                                            if (addLastDate.format("DD-MM-YYYY") >= totalDataInvoice.format("DD-MM-YYYY")) {
+                                                                                newPaydate = CountDate(element.endDate, addLastDate, [true])
+                                                                            }
+                                                                        
                                                                         _endDate = _cloneDeep(element.endDate)
                                                                         _endDate2 = element.endDate
                                                                     }
-                                                                    console.log('first 3')
+                                                                    // oldDate = CountDate(totalDataInvoice, element.date, [true])
+                                                                    // newPaydate = CountDate(element.endDate, totalDataInvoice, [])
+                                                                    // param.startDate = element.date.format("DD-MM-YYYY")
+                                                                    // param.endDate = _cloneDeep(totalDataInvoice).format("DD-MM-YYYY")
+                                                            
+                                                                    // //  console.log('(dayRate-lastDay) <= (oldDate+newPaydate)',lastDay,dayRate, (dayRate-lastDay),(oldDate+newPaydate))
+                                                                    // if((dayRate-lastDay) < (oldDate+newPaydate)){
+                                                                    //     oldDate = 0
+                                                                    //     newPaydate = CountDate(element.endDate, addLastDate, [true])
+                                                                    //     if((nRate.length - 1) > index){
+                                                                    //         _endDate2 = element.endDate
+                                                                    //         _endDate = _cloneDeep(_endDate2)
+                                                                    //     }
+                                                                    // }
                                                                 }else{
                                                                     if(oldDate < 0){
                                                                         newPaydate = CountDate(element.endDate, addLastDate, [true])
                                                                         _endDate = _cloneDeep(element.endDate)
                                                                         _endDate2 = element.endDate
-                                                                        console.log('first 4')
                                                                     }
                                                                 }
                                                                 // console.log('totalDataInvoice', param.startDate,param.endDate)
@@ -1123,33 +1256,30 @@ export const YieldReport = (props) => {
                                                                     let ckStartDate = moment(param.startDate,'DD-MM-YYYY').add(oldDate-1,'day')
                                                                     param.endDate = ckStartDate.format('DD-MM-YYYY')
                                                                 
-
+                                                                    // param.startDate = addLastDate.format("DD-MM-YYYY")
+                                                                    // param.endDate = totalDataInvoice.format("DD-MM-YYYY")
+                                                                    // param.aging = (dayRate - newPaydate)
                                                                     param.aging = lastDay + oldDate
-                                                                    // console.log('param.aging', param.aging)
                                                                     lastDay = lastDay + oldDate
-                                                                   
                                                                     param.normalRate = rateRes.oldValue
                                                                     param.rentalDay = oldDate
                                                                     // console.log('param', param)
                                                                     if (param.rentalDay > 0) {
                                                                         // console.log('_cloneDeep(param)1', _cloneDeep(param))
-                                                                        item.push(groupData(param))
+                                                                        item.push(groupData(param,false,formatToFixed))
                                                                     }
-                                                                    // param.startDate = _cloneDeep(element.endDate).subtract(newPaydate - 1, 'days').format("DD-MM-YYYY")
-                                                                    param.startDate = _cloneDeep(ckStartDate).add(1,'day').format("DD-MM-YYYY")
+                                                                    param.startDate = _cloneDeep(element.endDate).subtract(newPaydate - 1, 'days').format("DD-MM-YYYY")
                                                                     param.endDate = element.endDate.format("DD-MM-YYYY")
                                                                     param.aging = lastDay + newPaydate
                                                                     lastDay = lastDay + newPaydate
-                                                                   
                                                                     param.normalRate = rateRes.value
                                                                     param.rentalDay = newPaydate
-                                                                    
+                                                                    // console.log('param', param.startDate,param.endDate)
                                                                     if (param.rentalDay > 0) {
                                                                         // console.log('_cloneDeep(param)', _cloneDeep(param))
-                                                                        item.push(groupData(param))
+                                                                        item.push(groupData(param,false,formatToFixed))
                                                                     }
                                                                 } else {
-                                                              
                                                                     param.startDate = _endDate.subtract(newPaydate - 1, 'days').format("DD-MM-YYYY")
                                                                     param.endDate = _endDate2.format("DD-MM-YYYY")
                                                                     param.aging = CountDate(_endDate2,monthInvoic,[true])
@@ -1158,7 +1288,7 @@ export const YieldReport = (props) => {
                                                                     param.rentalDay = newPaydate
                                                                     if (param.rentalDay > 0) {
                                                                         // console.log('_cloneDeep(param)', _cloneDeep(param))
-                                                                        item.push(groupData(param))
+                                                                        item.push(groupData(param,false,formatToFixed))
                                                                     }
                                                                 }
                                                             }
@@ -1179,14 +1309,14 @@ export const YieldReport = (props) => {
                                                     param.normalRate =  rateRes.value
                                                     param.rentalDay = day
                                                     if (param.rentalDay > 0) {
-                                                        item.push(groupData(param))
+                                                        item.push(groupData(param,false,formatToFixed))
                                                     }
                                                 } else if(isCheckDefault){
                                                     if (rateRes.type === 'nomal') {
                                                         param.normalRate =  rateRes.value
                                                         param.rentalDay = day
                                                         if (param.rentalDay > 0) {
-                                                            item.push(groupData(param))
+                                                            item.push(groupData(param,false,formatToFixed))
                                                         }
                                                     } else {
                                                         let countDate = rateRes.type - 30
@@ -1199,7 +1329,7 @@ export const YieldReport = (props) => {
                                                                 param.normalRate = rateRes.value
                                                                 param.rentalDay = oldDate
                                                                 if (param.rentalDay > 0) {
-                                                                    item.push(groupData(param))
+                                                                    item.push(groupData(param,false,formatToFixed))
                                                                 }
                                                             } else {
                                                                 totalDate = _cloneDeep(DateFormat(invoiceDate)).add(359, 'days')
@@ -1209,7 +1339,7 @@ export const YieldReport = (props) => {
                                                                 param.normalRate = rateRes.oldValue
                                                                 param.rentalDay = oldDate
                                                                 if (param.rentalDay > 0) {
-                                                                    item.push(groupData(param))
+                                                                    item.push(groupData(param,false,formatToFixed))
                                                                 }
                                                             }
                                                         } else {
@@ -1229,7 +1359,7 @@ export const YieldReport = (props) => {
                                                                 param.normalRate = rateRes.oldValue
                                                                 param.rentalDay = oldDate
                                                                 if (param.rentalDay > 0) {
-                                                                    item.push(groupData(param))
+                                                                    item.push(groupData(param,false,formatToFixed))
                                                                 }
                                                                 param.startDate = _endDate.subtract(newPaydate - 1, 'days').format("DD-MM-YYYY")
                                                                 param.endDate = endDate.format("DD-MM-YYYY")
@@ -1237,7 +1367,7 @@ export const YieldReport = (props) => {
                                                                 param.normalRate = rateRes.value
                                                                 param.rentalDay = newPaydate
                                                                 if (param.rentalDay > 0) {
-                                                                    item.push(groupData(param))
+                                                                    item.push(groupData(param,false,formatToFixed))
                                                                 }
                                                             } else {
                                                                 // param.startDate = DateFormat(totalDataInvoice).format("DD-MM-YYYY")
@@ -1248,7 +1378,7 @@ export const YieldReport = (props) => {
                                                                 param.rentalDay = newPaydate
                                                             
                                                                 if (param.rentalDay > 0) {
-                                                                    item.push(groupData(param))
+                                                                    item.push(groupData(param,false,formatToFixed))
                                                                 }
                                                             }
                                                         }
@@ -1293,8 +1423,13 @@ export const YieldReport = (props) => {
                                     let _startDate = dueDate
                                     let newDueDate = CountDate(defaultPayDate, DateFormat(dueDate), defaultPay)
                                     if (startDate.year() !== dueDate.year() || dueDate.month() !== startDate.month()) {
-                                        _startDate = startDate
-                                        newDueDate = CountDate(defaultPayDate, startDate, defaultPay)
+                                        if(_startDate.format('YYYYMMDD') <= defaultPayDate.format('YYYYMMDD')){ // เพิ่มใหม่
+                                            _startDate = _cloneDeep(defaultPayDate).startOf('month')
+                                            newDueDate = CountDate(defaultPayDate, _startDate, defaultPay)
+                                        }else{
+                                            _startDate = startDate
+                                            newDueDate = CountDate(defaultPayDate, startDate, defaultPay)
+                                        }
                                     }
                                     
 
@@ -1356,10 +1491,13 @@ export const YieldReport = (props) => {
                                     const defaultRate = element.default_default_rate
 
                                     if (element.default_default === "AGING") {
-                                        param.outstanding = element.default_installment
+                                        // param.outstanding = element.default_installment
                                         param.defaultAGINGRate = defaultRate
                                     } else {
                                         param.defaultSOTRate = defaultRate
+                                    }
+                                    if(element.default_installment){
+                                        param.outstanding = element.default_installment
                                     }
                                     
                                     param.startDate = _startDate.format("DD-MM-YYYY")
@@ -1369,7 +1507,7 @@ export const YieldReport = (props) => {
                                     param.rentalDay = newDueDate
                                     if (param.rentalDay > 0 && dayInterestCal >= 0) {
                                         if(calculateByFranchise){
-                                        item.push(groupData(param))
+                                        item.push(groupData(param,false,formatToFixed))
                                         }
                                     }
 
@@ -1378,6 +1516,7 @@ export const YieldReport = (props) => {
                             }
 
                             if ((!paymentPay && !defaultPay.length) || (defaultPay.length && !paymentPay)) {
+                                console.log('ไม่มีการจ่ายเงิน', '=====================')
                                 param.outstanding = outstanding
                                 let dayDefault = 0
                                 for (let index = 0; index < nRate.length; index++) {
@@ -1425,15 +1564,17 @@ export const YieldReport = (props) => {
                                     param.startDate = _startDate.format("DD-MM-YYYY")
                                     param.endDate = _endDate.format("DD-MM-YYYY")
                                     param.aging = day
-                      
+       
                                     if (totalData > 0) {
                                         const rateRes = CountRate(day, masterCondition, element.rate)
+                                        
+                                  
 
                                         if (rateRes.type === 'nomal') {
                                             param.normalRate = rateRes.value
                                             param.rentalDay = totalData
                                             if (param.rentalDay > 0) {
-                                                item.push(groupData(param, true))
+                                                item.push(groupData(param, true, formatToFixed))
                                             }
                                         } else {
                                            
@@ -1451,40 +1592,46 @@ export const YieldReport = (props) => {
 
                                                 if (countDay >= startDate.daysInMonth()) {
                                                     if (param.rentalDay > 0) {
-                                                        item.push(groupData(param, true))
+                                                        item.push(groupData(param, true, formatToFixed))
                                                     }
                                                 } else {
                                                     totalDate = DateFormat(invoiceDate).add(359, 'days')
-                                                    oldDate = CountDate(totalDate, startDate, [true])
-                                                    let newPaydate = CountDate(endDate, totalDate, [])
-                                                    if(totalDate.format('DD/MM/YYYY') < startDate.format('DD/MM/YYYY')){
-                                                        newPaydate = CountDate(endDate, startDate, [true])
-                                                       
-                                                    }
-                                                    param.startDate = _startDate.format("DD-MM-YYYY")
-                                                    param.endDate = totalDate.format("DD-MM-YYYY")
-                                                    param.normalRate = rateRes.oldValue
-                                                    param.rentalDay = oldDate
-                                                    param.aging = (day - newPaydate)
-                                                    if (param.rentalDay > 0) {
-                                                        item.push(groupData(param, true))
-                                                    }
-                                                    param.startDate = _cloneDeep(totalDate).add(1, 'days').format("DD-MM-YYYY")
-                                                    if(totalDate.format('DD/MM/YYYY') < startDate.format('DD/MM/YYYY')){
-                                                        param.startDate = startDate.format("DD-MM-YYYY")
-                                                    }
-                                                    param.endDate = endDate.format("DD-MM-YYYY")
-                                                    param.normalRate = rateRes.value
-                                                    param.rentalDay = newPaydate
-                                                    param.aging = day
-                                                    if (param.rentalDay > 0) {
-                                                        item.push(groupData(param, true))
+                                                    if(Number(startDate.format('MM')) != Number(totalDate.format('MM'))){
+                                                        if (param.rentalDay > 0) {
+                                                            item.push(groupData(param, true, formatToFixed))
+                                                        }
+                                                    }else{
+                                                        oldDate = CountDate(totalDate, startDate, [true])
+                                                        let newPaydate = CountDate(endDate, totalDate, [])
+                                                        if (totalDate.format('DD/MM/YYYY') < startDate.format('DD/MM/YYYY')) {
+                                                            newPaydate = CountDate(endDate, startDate, [true])
+
+                                                        }
+                                                        param.startDate = _startDate.format("DD-MM-YYYY")
+                                                        param.endDate = totalDate.format("DD-MM-YYYY")
+                                                        param.normalRate = rateRes.oldValue
+                                                        param.rentalDay = oldDate
+                                                        param.aging = (day - newPaydate)
+                                                        if (param.rentalDay > 0) {
+                                                            item.push(groupData(param, true, formatToFixed))
+                                                        }
+                                                        param.startDate = _cloneDeep(totalDate).add(1, 'days').format("DD-MM-YYYY")
+                                                        if (totalDate.format('DD/MM/YYYY') < startDate.format('DD/MM/YYYY')) {
+                                                            param.startDate = startDate.format("DD-MM-YYYY")
+                                                        }
+                                                        param.endDate = endDate.format("DD-MM-YYYY")
+                                                        param.normalRate = rateRes.value
+                                                        param.rentalDay = newPaydate
+                                                        param.aging = day
+                                                        if (param.rentalDay > 0) {
+                                                            item.push(groupData(param, true, formatToFixed))
+                                                        }
                                                     }
                                                 }
 
                                             } else {
                                                 let totalDate = DateFormat(invoiceDate).add(countDate, 'days')
-                                                let oldDate = CountDate(totalDate, startDate, [])
+                                                let oldDate = CountDate(totalDate, startDate, defaultPay.length ? [true] :[])
                                                 
                                                 let newTotalDate = CountDate(endDate, DateFormat(totalDate), [true])
                                                 if(totalDate.format('MM') !== _startDate.format("MM")){
@@ -1494,11 +1641,12 @@ export const YieldReport = (props) => {
                                                 if(oldDate > 0){
                                                     param.startDate = _startDate.format("DD-MM-YYYY")
                                                     param.endDate = totalDate.subtract(1, 'days').format("DD-MM-YYYY")
+                                                
                                                     param.normalRate = rateRes.oldValue
-                                                    param.rentalDay = oldDate
+                                                    param.rentalDay = (oldDate - (defaultPay.length ? 1 : 0))
                                                     param.aging = (day - newTotalDate)
                                                     if (param.rentalDay > 0) {
-                                                        item.push(groupData(param, true))
+                                                        item.push(groupData(param, true, formatToFixed))
                                                     }
                                                     if(totalDate.format('MM') !== _startDate.format("MM")){
                                                         param.startDate = _startDate.format("DD-MM-YYYY")
@@ -1510,13 +1658,13 @@ export const YieldReport = (props) => {
                                                     param.rentalDay = newTotalDate
                                                     param.aging = day
                                                     if (param.rentalDay > 0) {
-                                                        item.push(groupData(param, true))
+                                                        item.push(groupData(param, true, formatToFixed))
                                                     }
                                                 }else{
                                                     let  rentalDaySum = newTotalDate
                                                     if(totalDate.format('MM') !== _startDate.format("MM")){
                                                         param.startDate = _startDate.format("DD-MM-YYYY")
-                                                    }else{
+                                                    }else if(totalDate.format('DD') !== '01'){
                                                         param.startDate = DateFormat(totalDate).add(1, 'day').format("DD-MM-YYYY")
                                                     }
                                                     
@@ -1529,7 +1677,7 @@ export const YieldReport = (props) => {
                                                     param.rentalDay = rentalDaySum
                                                     param.aging = day
                                                     if (param.rentalDay > 0) {
-                                                        item.push(groupData(param, true))
+                                                        item.push(groupData(param, true, formatToFixed))
                                                     }
                                                 }
                                                 // for (let i = 0; i < 2; i++) {

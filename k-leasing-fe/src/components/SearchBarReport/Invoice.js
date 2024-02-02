@@ -2,7 +2,7 @@ import React, { useState, useEffect, forwardRef } from 'react'
 import { connect } from 'react-redux'
 import moment from 'moment'
 import DatePicker from 'react-datepicker'
-import { DateFormatFront } from '../../utils/helpers'
+import { DateFormat } from '../../utils/helpers'
 import { Condition, InputData, Ui } from '../../redux/actions'
 
 import Row from 'react-bootstrap/Row'
@@ -15,6 +15,7 @@ import Spinner from 'react-bootstrap/Spinner'
 
 
 import _isUndefined from 'lodash/isUndefined'
+import _ from 'lodash'
 
 const ListDate = (props) => {
 
@@ -36,9 +37,21 @@ export const SearchInvoice = (props) => {
         setDueDate,
         setDate,
         dateShow,
-        statusFile: { data: statusData } } = props
-    const [dateActive, setDateActive] = useState(moment().format('YYYY/MM'))
+        statusFile: { data: statusData },
+        reportStatement: { data: reportStatementData, pending: pendingReportStatement },
+        setReportStatement
+    } = props
 
+    const [dateActive, setDateActive] = useState(moment().format('YYYY/MM'))
+    const [description, setDescription] = useState('');
+    const [linkData, setLinkData] = useState('');
+
+    useEffect(() => {
+        if(reportStatementData && reportStatementData.length > 0){
+            setDescription(reportStatementData[0].description)
+            setLinkData(reportStatementData[0].url)
+        }
+    }, [reportStatementData])
     useEffect(() => {
         if (!Object.keys(statusData).length) {
             getStatusFile()
@@ -72,9 +85,21 @@ export const SearchInvoice = (props) => {
     // const defaultDueDate = moment().startOf('month').add(9, 'days')
     const CustomInput = forwardRef(({ value, onClick }, ref) => (
         <button type="button" className="btn btn-warning" onClick={onClick} ref={ref}>
-            {value ? `Date : ${DateFormatFront(value).format('DD-MM-YYYY')}` : dueDate.format('DD-MM-YYYY')}
+            {value ? `Date : ${DateFormat(value).format('DD-MM-YYYY')}` : dueDate.format('DD-MM-YYYY')}
         </button>
     ));
+
+    const setReportStatementData = async () => {
+        const rsd = reportStatementData[0];
+        const param = {
+            des    : description,
+            user_id: rsd.add_by_user_id,
+            link   : linkData,
+            id     : rsd.id
+        }
+        await setReportStatement(param)
+    }
+
     // console.log(`dueDate`, dueDate)
     return (
         <>
@@ -136,6 +161,30 @@ export const SearchInvoice = (props) => {
                         </Col>
                 }
             </Card>
+            {
+                !_.isUndefined(reportStatementData) && reportStatementData.length > 0 && (
+                    <Card className="my-3">
+                        <Card.Header className="d-flex justify-content-between">
+                            <h3>Statement of Rental Charges</h3>
+                            <Button variant='primary' onClick={() => setReportStatementData()}>
+                                {pendingReportStatement ? <Spinner animation="border" variant="success" /> : 'Save'}
+                            </Button>
+                        </Card.Header>
+                        <ListGroup variant="flush">
+                            <ListGroup.Item>
+                                <Col>
+                                    <Form.Control as="textarea" rows={3} value={description} onChange={(event) => setDescription(event.target.value)}  />
+                                </Col>
+                                <Col className="mt-2">
+                                    <Form.Control type="text" value={linkData} onChange={(event) => setLinkData(event.target.value)} />
+                                </Col>
+                            </ListGroup.Item>
+                        </ListGroup>
+
+
+                    </Card>
+                )
+            }
         </>
     )
 }
@@ -147,7 +196,8 @@ const mapStateToProps = (state) => {
             reportByDealer,
             invoiceAll,
             dueDate,
-            date: dateShow
+            date: dateShow,
+            reportStatement
         },
         inputData: {
             statusFile
@@ -159,7 +209,8 @@ const mapStateToProps = (state) => {
         statusFile,
         invoiceAll,
         dueDate,
-        dateShow
+        dateShow,
+        reportStatement
     }
 }
 
@@ -168,7 +219,8 @@ const mapDispatchToProps = {
     setDueDate: Condition.setDueDate,
     setDate: Condition.setDate,
     getStatusFile: InputData.getStatusFile,
-    notification: Ui.notification
+    notification: Ui.notification,
+    setReportStatement: Condition.setReportStatement
 }
 
 export default connect(mapStateToProps, mapDispatchToProps)(SearchInvoice)

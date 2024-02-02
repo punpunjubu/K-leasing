@@ -2,7 +2,7 @@ import React, { useState, useEffect, forwardRef } from 'react'
 import { connect } from 'react-redux'
 import DatePicker from 'react-datepicker'
 import { Condition } from '../../redux/actions'
-import { DateFormatFront } from '../../utils/helpers'
+import { DateFormat } from '../../utils/helpers'
 
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
@@ -77,9 +77,9 @@ export const Interest = (props) => {
             event.preventDefault()
             event.stopPropagation()
         } else {
-            let date_1 = DateFormatFront(rate_2.mor.date).format('YYYY/MM/DD')
-            let date_2 = DateFormatFront(rate_3.mor.date).format('YYYY/MM/DD')
-            let date_3 = DateFormatFront(rate_4.mor.date).format('YYYY/MM/DD')
+            let date_1 = DateFormat(rate_2.mor.date).format('YYYY/MM/DD')
+            let date_2 = DateFormat(rate_3.mor.date).format('YYYY/MM/DD')
+            let date_3 = DateFormat(rate_4.mor.date).format('YYYY/MM/DD')
             if (!rate_2.mlr.rate && !rate_2.mor.rate) {
                 date_1 = null
             }
@@ -144,7 +144,7 @@ export const Interest = (props) => {
     }
     const CustomInput = forwardRef(({ value, onClick }, ref) => (
         <button type="button" className="btn btn-warning" onClick={onClick} ref={ref}>
-            {value ? `Date Start : ${DateFormatFront(value).format('DD-MM-YYYY')}` : 'Set Date Start'}
+            {value ? `Date Start : ${DateFormat(value).format('DD-MM-YYYY')}` : 'Set Date Start'}
         </button>
     ));
 
