@@ -41,7 +41,8 @@ export const ShowInvoice = (props) => {
         },
         onTextCustom,
         dueDateShow,
-        dateShow } = props
+        dateShow,
+        reportStatementData } = props
     const [activeInvoice, setActiveInvoice] = useState(1)
     const outstanding = _sumBy(listInvoice, (e) => Number(e.outstanding,2))
     let preVat = _sumBy(listInvoice, e => formatNumber(e.preVat,2))
@@ -194,8 +195,8 @@ export const ShowInvoice = (props) => {
                             </Row>
                             <Row>
                                 <Col>
-                                    <p className="m-0">{`ผลิตภัณฑ์สินเชื่อทุกประเภทของ บริษัท ลีสซิ่งกสิกรไทย จำกัด (สินเชื่อเช่าซื้อ สินเชื่อเช่าทางการเงิน สินเชื่อส่วนบุคคลภายใต้การกำกับที่มีทะเบียนรถเป็นประกัน และสินเชื่อเพื่อผู้แทนจำหน่ายรถยนต์) จะมีการเปลี่ยนแปลงเงื่อนไขเกี่ยวกับการคิดดอกเบี้ยผิดนัดชำระหนี้และการชำระสินเชื่อคืนแก่บริษัท เพื่อให้การคิดดอกเบี้ยผิดนัดชำระหนี้สอดคล้องกับข้อเท็จจริง และเกิดความเป็นธรรมมากขึ้น โดยลูกค้าสามารถเข้าไปดูรายละเอียดได้ตาม URL ด้านล่าง`}</p>
-                                    <p>{`https://www.kasikornleasing.com/th/news/Pages/Default-Interest.aspx`}</p>
+                                    <p className="m-0">{reportStatementData && reportStatementData[0]  ? reportStatementData[0].description : ''}</p>
+                                    <p>{reportStatementData && reportStatementData[0]  ? reportStatementData[0].url : ''}</p>
                                 </Col>
                             </Row>
                             <Row>

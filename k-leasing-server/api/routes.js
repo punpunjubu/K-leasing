@@ -20,6 +20,7 @@ class RouterController {
         app.get('/getSearchReportByDealer', condition.getSearchReportByDealer);
         app.get('/getStatusFile', condition.getStatusFile);
         app.get('/getLoanType', condition.getLoanType);
+        app.get('/getReportStatement', condition.getReportStatement);
         
         app.post('/login', user.userLogin);
         app.post('/register', user.userRegister);
@@ -28,6 +29,7 @@ class RouterController {
         app.post('/getReportAll', condition.getReportAll);
         app.post('/setLoanType', condition.setLoanType);
         app.post('/resetpassword', user.resetpassword);
+        app.post('/setReportStatement', condition.setReportStatement);
         app.get('*', controller.getStandardRequest);
     }
 }

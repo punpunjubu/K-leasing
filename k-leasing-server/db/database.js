@@ -131,6 +131,18 @@ const getMasterSpecConditionAll = async () => {
     const sql_master_condition = `SELECT * FROM master_condition_special;`;
     return await callQuery(sql_master_condition, [])
 }
+const getReportStatement = async (userId) => {
+
+    const sql = `SELECT * FROM report_statement WHERE add_by_user_id = ? LIMIT 1;`;
+    return await callQuery(sql, [userId])
+}
+
+const updateReportStatement = (param) => {
+    const { description, user_id, url, id  } = param
+    const sql = `UPDATE report_statement SET add_by_user_id = ?, description = ?, url = ? WHERE id = ?;`;
+    return callQuery(sql, [user_id, description, url, id])
+}
+
 const updateLogin = (param) => {
     const { id } = param
     const sql = `UPDATE user SET user_last_login = ? WHERE user_id = ?;`;
@@ -484,5 +496,7 @@ module.exports = {
     updateLogout,
 
     checkUserName,
-    reSetPassword
+    reSetPassword,
+    getReportStatement,
+    updateReportStatement
 };

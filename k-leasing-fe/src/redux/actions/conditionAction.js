@@ -129,6 +129,32 @@ export const setLoanType = (param) => {
   };
 };
 
+export const getReportStatement = (param) => {
+
+  return {
+    types: {
+      success: types.REPORT_STATEMENT_DATA_SUCCESS,
+      pending: types.REPORT_STATEMENT_DATA_PENDING,
+      error: types.REPORT_STATEMENT_DATA_ERROR,
+    },
+    call: call.get(`getReportStatement?userId=${param}`,{}),
+
+  };
+};
+
+export const setReportStatement = (param) => {
+
+  return {
+    types: {
+      success: types.REPORT_STATEMENT_DATA_SUCCESS,
+      pending: types.REPORT_STATEMENT_DATA_PENDING,
+      error: types.REPORT_STATEMENT_DATA_ERROR,
+    },
+    call: call.post('setReportStatement', {}, param),
+
+  };
+};
+
 export const setDueDate = (param) => {
 
   return {

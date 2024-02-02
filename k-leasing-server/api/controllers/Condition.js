@@ -145,6 +145,46 @@ class Condition {
         }
     };
 
+    getReportStatement = async (req, res) => {
+        try {
+            const { headers: { session }, query: { userId } } = req
+            if (!session) {
+                return fshp.handleError(res, 401, 'Session value Error')
+            }
+            const response = await db.getReportStatement(userId)
+            res.status(200).json({
+                data: response,
+                status: 200
+            });
+        } catch (error) {
+            return fshp.handleError(res, 401, error)
+        }
+    };
+
+    setReportStatement = async (req, res) => {
+        try {
+            const { headers: { session }, body: { des, user_id, link, id } } = req
+            if (!session || !id || !user_id) {
+                return fshp.handleError(res, 401, 'Session value Error')
+            }
+            const param = {
+                id: id,
+                user_id: user_id,
+                description: des,
+                url: link
+            }
+            await db.updateReportStatement(param)
+            
+            const response = await db.getReportStatement(user_id)
+            res.status(200).json({
+                data: response,
+                status: 200
+            });
+        } catch (error) {
+            return fshp.handleError(res, 401, error)
+        }
+    }
+
     setMaster = async (req, res) => {
         try {
             const { headers: { session }, body: { rate_1, rate_2, rate_3, rate_4, user_id } } = req

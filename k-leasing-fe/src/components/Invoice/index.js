@@ -47,7 +47,9 @@ export const Invoice = (props) => {
         invoiceAll: { data: invoiceData, pending: pendingSearch },
         masterInterest: { data: mor_mlr },
         loanType: { data: loanTypeData },
-        dueDateShow, dateShow } = props
+        dueDateShow, 
+        dateShow,
+        reportStatement: { data :reportStatementData} } = props
 
     const [dataRender, setDataRender] = useState({})
     const [showInvoice, setShowInvoice] = useState(null)
@@ -1242,6 +1244,7 @@ export const Invoice = (props) => {
             setDataRender(item)
         }
     }, [invoiceData])
+
     const checkAll = (e) => {
         const form = e.target
         const checkDealer = document.getElementsByName('checkDealer')
@@ -1251,6 +1254,7 @@ export const Invoice = (props) => {
             element.checked = form.checked
         }
     }
+    
     const renderBody = () => {
         let renderItem = []
 
@@ -1317,7 +1321,6 @@ export const Invoice = (props) => {
     }
 
 
-
     return (
         <>
 
@@ -1331,7 +1334,7 @@ export const Invoice = (props) => {
                             <h3>Invoice by dealer</h3>
                         </Col>
                         <Col className="text-right">
-                            <MyDocument dataRender={dataRender} dateShow={dateShow} dueDateShow={dueDateShow} />
+                            <MyDocument dataRender={dataRender} dateShow={dateShow} dueDateShow={dueDateShow} reportStatementData={reportStatementData} />
                         </Col>
                     </Card.Header>
                     <ListGroup variant="flush">
@@ -1367,7 +1370,7 @@ export const Invoice = (props) => {
                                                 <Button variant='danger' onClick={() => setShowInvoice(null)}>Close</Button>
                                             </Row>
                                         </Col>
-                                        <ShowInvoice data={dataRender[showInvoice]} onTextCustom={(e) =>
+                                        <ShowInvoice data={dataRender[showInvoice]} reportStatementData={reportStatementData} onTextCustom={(e) =>
                                             setDataRender(oldValue => {
                                                 return {
                                                     ...oldValue,
@@ -1385,6 +1388,7 @@ export const Invoice = (props) => {
 
                 </Card>
             }
+           
 
         </>
     )
@@ -1398,7 +1402,8 @@ const mapStateToProps = (state) => {
             masterInterest,
             loanType,
             dueDate: dueDateShow,
-            date: dateShow
+            date: dateShow,
+            reportStatement
         }
     } = state
     return {
@@ -1407,7 +1412,8 @@ const mapStateToProps = (state) => {
         masterInterest,
         loanType,
         dueDateShow,
-        dateShow
+        dateShow,
+        reportStatement
     }
 }
 

@@ -100,8 +100,11 @@ const MyDoc = (props) => {
             defaultWithHolding,
             dateCustom,
             defaultVat
-        }
+            
+        },
+        reportStatementData
     } = props
+
     let preVat = _sumBy(listInvoice, e => formatNumber(e.preVat, 2))
     // let vat = _sumBy(listInvoice,  e => formatNumber(e.vat))
     // let withHolding = _sumBy(listInvoice,  e => formatNumber(e.withHolding))
@@ -274,10 +277,10 @@ const MyDoc = (props) => {
                     <Text style={[styles.textLeft2]}>{`กำหนดชำระเงิน`}</Text>
                 </View>
                 <View style={[styles.content, { paddingTop: 10, paddingLeft: 50, paddingRight: 50 }]}>
-                    <Text style={{ width: '100%' }}>{`ผลิตภัณฑ์สินเชื่อทุกประเภทของ บริษัท ลีสซิ่งกสิกรไทย จำกัด (สินเชื่อเช่าซื้อ สินเชื่อเช่าทางการเงิน สินเชื่อส่วนบุคคลภายใต้การกำกับที่มีทะเบียนรถเป็นประกัน และสินเชื่อเพื่อผู้แทนจำหน่ายรถยนต์) จะมีการเปลี่ยนแปลงเงื่อนไขเกี่ยวกับการคิดดอกเบี้ยผิดนัดชำระหนี้และการชำระสินเชื่อคืนแก่บริษัท เพื่อให้การคิดดอกเบี้ยผิดนัดชำระหนี้สอดคล้องกับข้อเท็จจริง และเกิดความเป็นธรรมมากขึ้น โดยลูกค้าสามารถเข้าไปดูรายละเอียดได้ตาม URL ด้านล่าง`}</Text>
+                    <Text style={{ width: '100%' }}>{reportStatementData && reportStatementData[0]  ? reportStatementData[0].description : '' }</Text>
                 </View>
                 <View style={[styles.content, { paddingTop: 10, paddingLeft: 50, paddingRight: 50 }]}>
-                    <Text style={{ width: '100%' }}>{`https://www.kasikornleasing.com/th/news/Pages/Default-Interest.aspx`}</Text>
+                    <Text style={{ width: '100%' }}>{reportStatementData && reportStatementData[0]  ? reportStatementData[0].url : '' }</Text>
                 </View>
                 <View style={[styles.content, { paddingTop: 10, paddingLeft: 50, paddingRight: 50 }]}>
                     <Text style={{ width: '100%' }}>{textCustom || ''}</Text>
@@ -541,7 +544,7 @@ const MyDocDetail = (props) => {
 
 
 const MyDocument = (props) => {
-    const { dataRender, dueDateShow, dateShow } = props
+    const { dataRender, dueDateShow, dateShow, reportStatementData } = props
     const [data, setData] = useState([])
     const [fileIndex, setFileIndex] = useState(0)
     const myRef = createRef()
@@ -559,7 +562,7 @@ const MyDocument = (props) => {
                     n.dueDateCustom = dueDateShow
                     n.dateCustom = dateShow
                     n.typeName = type === 'unit' ? '-unit-invoice' : '-invoice'
-                    let item = type === 'unit' ? <MyDocDetail data={n} /> : <MyDoc data={n} />
+                    let item = type === 'unit' ? <MyDocDetail data={n} /> : <MyDoc data={n} reportStatementData={reportStatementData} />
                     itemExport.push({
                         render: item,
                         data: n
