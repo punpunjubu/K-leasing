@@ -1261,10 +1261,19 @@ export const Invoice = (props) => {
         if (Object.keys(dataRender).length) {
             Object.keys(dataRender).map((res, index) => {
                 const item = dataRender[res]
-                let preVat = _sumBy(item.listInvoice, e => formatNumber(e.preVat,2))
-                let vat = _sumBy(item.listInvoice, e => (e.vat))
-                let withHolding = _sumBy(item.listInvoice, e => formatNumber(e.withHolding,2))
+                let preVat = formatNumber(_sumBy(item.listInvoice, e => formatNumber(e.preVat,2)),2)
+                // let vat = _sumBy(item.listInvoice, e => (e.vat))
+           
+                let vat = 0
+                if (item.dealer_condition_loan_type === "INVENTORY") {
+                    vat = formatNumber(((preVat * Number(item.defaultVat)) / 100),2)
+                }
+    
+                // let withHolding = _sumBy(item.listInvoice, e => formatNumber(e.withHolding,2))
+                let withHolding = formatNumber(((preVat * Number(item.defaultWithHolding)) / 100),2)
+             
                 let totalAdj = (preVat + Number(item.adjustment1))
+                
                 if (item.adjustment1) {
                     if (item.dealer_condition_loan_type === "INVENTORY") {
                         vat = ((totalAdj * Number(item.defaultVat)) / 100)

@@ -284,7 +284,7 @@ export const YieldReport = (props) => {
                         let endDate = DateFormat(date).endOf('month')
                         const defaultMonth = DateFormat(date).month()
                
-                        if (midno == '042673' && dealer.dealer_condition_dealer_code !== '') {
+                        if (midno !== '' && dealer.dealer_condition_dealer_code !== '') {
                             let groupPaydate = []
                             if (paymentPay) {
                                 param.outstanding = outstanding

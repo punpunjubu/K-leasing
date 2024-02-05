@@ -45,30 +45,34 @@ export const ShowInvoice = (props) => {
         reportStatementData } = props
     const [activeInvoice, setActiveInvoice] = useState(1)
     const outstanding = _sumBy(listInvoice, (e) => Number(e.outstanding,2))
-    let preVat = _sumBy(listInvoice, e => formatNumber(e.preVat,2))
+    let preVat = formatNumber(_sumBy(listInvoice, e => formatNumber(e.preVat,2)),2)
     // let vat = _sumBy(listInvoice, e => (e.vat))
     let vat = 0
     if (dealer_condition_loan_type === "INVENTORY") {
-        vat = formatNumber((preVat * Number(defaultVat)) / 100)
+        vat = formatNumber(((preVat * Number(defaultVat)) / 100),2)
     }
+  
     // let withHolding = _sumBy(listInvoice, e => (e.withHolding))
-    let withHolding = formatNumber((preVat * Number(defaultWithHolding)) / 100)
+    let withHolding = formatNumber(((preVat * Number(defaultWithHolding)) / 100),2)
+   
     // const totalSum = _sumBy(listInvoice, e => formatNumber(e.total))
+
     const totalSum = (preVat + vat)
     let totalAdj = (preVat + Number(adjustment1))
     const vatUnit = vat
     const withHoldingUnit = withHolding
     if (adjustment1) {
         if (dealer_condition_loan_type === "INVENTORY") {
-            vat = ((totalAdj * Number(defaultVat)) / 100)
+            vat = formatNumber(((totalAdj * Number(defaultVat)) / 100),2)
         }
-        withHolding = ((totalAdj * Number(defaultWithHolding)) / 100)
+        withHolding = formatNumber(((totalAdj * Number(defaultWithHolding)) / 100),2)
     }
 
-    let total = ((totalAdj + vat) - withHolding)
+    let total = formatNumber(((totalAdj + vat) - withHolding),2)
+
     let oldTotal = total
     if (adjustment2) {
-        total = total + Number(adjustment2)
+        total = formatNumber(total + Number(adjustment2),2)
     }
     // const dueDateCustom = DateFormat(date).add(1, 'month').add(dueDateShow - 1, 'day')
     // const dueDateCustom = dueDateShow
